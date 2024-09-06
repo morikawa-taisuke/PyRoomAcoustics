@@ -12,7 +12,7 @@ import torch
 # my_module
 import rec_config as rec_conf
 import rec_utility as rec_util
-from mymodule import my_func
+from mymodule import my_func, const
 
 
 def serch_reverbe_sec(reverbe_sec, channel=1, angle=np.pi):
@@ -20,7 +20,7 @@ def serch_reverbe_sec(reverbe_sec, channel=1, angle=np.pi):
     cnt = 0
     room_dim = np.r_[10.0, 10.0, 10.0]
     """ 音源の読み込み """
-    target_data = rec_util.load_wave_data(f'./sound_data/sample_data/speech/JA/test/JA04F085.wav')
+    target_data = rec_util.load_wave_data(f'./mymodule/JA01F049.wav')
     noise_data = target_data
     wave_data = []  # 1つの配列に格納
     wave_data.append(target_data)
@@ -404,9 +404,9 @@ if __name__ == '__main__':
     """ シミュレーションの設定"""
     speech_type = 'sebset_DEMAND'
     noise_type = 'hoth'
-    target_dir = f'C:\\Users\\kataoka-lab\\Desktop\\sound_data\\sample_data\\speech\\subset_DEMAND\\'  # 目的信号のディレクトリ
+    target_dir = f'{const.SAMPLE_DATA_DIR}\\sample_data\\speech\\subset_DEMAND\\'  # 目的信号のディレクトリ
     sub_dir_list = my_func.get_subdir_list(target_dir)
-    noise_path = f'C:\\Users\\kataoka-lab\\Desktop\\sound_data\\sample_data\\noise\\{noise_type}.wav'  # 雑音信号のディレクトリ
+    noise_path = f'{const.SAMPLE_DATA_DIR}\\sample_data\\noise\\{noise_type}.wav'  # 雑音信号のディレクトリ
     snr_list = 10  # SNR
     reverbe_list = [0.5]  # 残響
     channel_list = 2  # マイク数
@@ -421,7 +421,7 @@ if __name__ == '__main__':
     reverbe_sec = reverbe_list[0]
 
     for angle, angle_name in zip(angle_list, angle_name_list):
-        out_dir = f"C:\\Users\\kataoka-lab\\Desktop\\sound_data\\mix_data\\{speech_type}_{noise_type}_{snr_list:02}{snr_list:02}dB_{int(reverbe_sec*10):02}sec_{channel_list}ch_3cm\\{angle_name}"
+        out_dir = f"{const.MIX_DATA_DIR}\\{speech_type}_{noise_type}_{snr_list:02}{snr_list:02}dB_{int(reverbe_sec*10):02}sec_{channel_list}ch_3cm\\{angle_name}"
         print(f'out_dir:{out_dir}')
         reverbe_par = serch_reverbe_sec(reverbe_sec=reverbe_sec, channel=channel_list, angle=angle)  # 任意の残響になるようなパラメータを求める
         for sub_dir in sub_dir_list:
