@@ -257,10 +257,12 @@ def recoding2(wave_files, out_dir, snr, reverbe_sec, reverbe_par, channel=1, is_
     num_sources = len(wave_data)  # シミュレーションで用いる音源数
     mic_center = room_dim / 2  # アレイマイクの中心[x,y,z](m)
     num_channels = channel  # マイクの個数(チャンネル数)
-    distance = 0.03  # 各マイクの間隔(m)
-    mic_coordinate = rec_util.set_mic_coordinate(center=mic_center,
-                                                 num_channels=num_channels,
-                                                 distance=distance)  # 各マイクの座標
+    distance = 0.1/2  # 各マイクの間隔(m)
+    # mic_coordinate = rec_util.set_mic_coordinate(center=mic_center,
+    #                                              num_channels=num_channels,
+    #                                              distance=distance)  # 各マイクの座標
+
+    mic_coordinate = rec_util.set_circular_mic_coordinate(center=mic_center, num_channels=num_channels, radius=distance)
 
     doas = np.array([
         [np.pi/2., np.pi/2],
@@ -404,12 +406,12 @@ if __name__ == '__main__':
     """ シミュレーションの設定"""
     speech_type = 'sebset_DEMAND'
     noise_type = 'hoth'
-    target_dir = f'{const.SAMPLE_DATA_DIR}\\sample_data\\speech\\subset_DEMAND\\'  # 目的信号のディレクトリ
+    target_dir = f'{const.SAMPLE_DATA_DIR}\\speech\\subset_DEMAND\\'  # 目的信号のディレクトリ
     sub_dir_list = my_func.get_subdir_list(target_dir)
-    noise_path = f'{const.SAMPLE_DATA_DIR}\\sample_data\\noise\\{noise_type}.wav'  # 雑音信号のディレクトリ
+    noise_path = f'{const.SAMPLE_DATA_DIR}\\noise\\{noise_type}.wav'  # 雑音信号のディレクトリ
     snr_list = 10  # SNR
     reverbe_list = [0.5]  # 残響
-    channel_list = 2  # マイク数
+    channel_list = 4  # マイク数
     is_split = False  # 信号の保存方法 True:各チャンネルごとにファイルを分ける False:1つのファイルにまとめる
     angle_list = [np.pi*i/4. for i in range(5)]
     angle_name_list = ['Right', 'FrontRight', 'Front', 'FrontLeft', 'Left']
@@ -421,7 +423,7 @@ if __name__ == '__main__':
     reverbe_sec = reverbe_list[0]
 
     for angle, angle_name in zip(angle_list, angle_name_list):
-        out_dir = f"{const.MIX_DATA_DIR}\\{speech_type}_{noise_type}_{snr_list:02}{snr_list:02}dB_{int(reverbe_sec*10):02}sec_{channel_list}ch_3cm\\{angle_name}"
+        out_dir = f"{const.MIX_DATA_DIR}\\{speech_type}_{noise_type}_{snr_list:02}{snr_list:02}dB_{int(reverbe_sec*10):02}sec_{channel_list}ch_circular_10cm\\{angle_name}"
         print(f'out_dir:{out_dir}')
         reverbe_par = serch_reverbe_sec(reverbe_sec=reverbe_sec, channel=channel_list, angle=angle)  # 任意の残響になるようなパラメータを求める
         for sub_dir in sub_dir_list:

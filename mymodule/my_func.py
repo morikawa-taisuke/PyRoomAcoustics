@@ -114,12 +114,11 @@ def get_wave_filelist(path):
 
     return filelist
 
-def load_wav(path, SR=const.SR):
+def load_wav(path):
     """ 保存のSRが異なれば変換する
 
     Args:
         path: wavファイルのパス
-        SR: サンプリング周波数
 
     Returns:
         amplitude   : 振幅
@@ -140,14 +139,13 @@ def load_wav(path, SR=const.SR):
 
     return amptitude, prm
 
-def save_wav(path, wav, prm, SR = const.SR):
+def save_wav(path, wav, prm):
     """ wavファイルの保存
 
     Args:
         path    : wavファイルのパス
         wav     : 保存する波形
         prm     : パラメータ
-        SR      : サンプリング周波数
 
     Returns:
         None

@@ -34,10 +34,10 @@ def set_circular_mic_coordinate(center, num_channels, radius):
     """ アレイマイクの各マイクの座標を決める (円形アレイ)
     :param center: マイクの中心点
     :param num_channels: チャンネル数
-    :param distance: マイク間の距離
+    :param radius: アレイマイクの半径
     :return coordinate: マイクの座標
     """
-    angle_list = np.linspace(0, 2 * np.pi, num_channels, endpoint=False)
+    angle_list = np.linspace(0+np.pi/4, 2*np.pi +np.pi/4, num_channels, endpoint=False)
     print(angle_list)
     if len(center) == 2:
         x_points = center[0] + radius * np.cos(angle_list)

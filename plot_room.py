@@ -60,13 +60,13 @@ def plot_room(channel=1):
     # fig = plt.figure()
     # ax = fig.add_subplot()
 
-    plt.scatter(mic_coordinate[0], mic_coordinate[1], label='mic', marker="D", s=200, edgecolors="b")
-    plt.scatter(source_coordinate[0, 0], source_coordinate[1, 0], label='speeker', marker="^", s=200)
-    plt.scatter(source_coordinate[0, 1:], source_coordinate[1, 1:], label='noise', marker="x", s=200)
+    plt.scatter(mic_coordinate[0], mic_coordinate[1], label='mic', marker="D", s=10, edgecolors="b")
+    # plt.scatter(source_coordinate[0, 0], source_coordinate[1, 0], label='speeker', marker="^", s=100)
+    # plt.scatter(source_coordinate[0, 1:], source_coordinate[1, 1:], label='noise', marker="x", s=100)
     plt.xlabel("x")
     plt.ylabel("y")
-    plt.xlim(0, 10)
-    plt.ylim(0, 10)
+    plt.xlim(4.9, 5.1)
+    plt.ylim(4.9, 5.1)
     plt.legend(loc='best', markerscale=0.75)
     plt.show()
 
