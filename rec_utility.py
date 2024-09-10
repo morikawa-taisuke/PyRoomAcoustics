@@ -37,8 +37,8 @@ def set_circular_mic_coordinate(center, num_channels, radius):
     :param radius: アレイマイクの半径
     :return coordinate: マイクの座標
     """
-    angle_list = np.linspace(0+np.pi/4, 2*np.pi +np.pi/4, num_channels, endpoint=False)
-    print(angle_list)
+    angle_list = np.linspace(0 +np.pi/4, 2*np.pi +np.pi/4, num_channels, endpoint=False)
+    # print(angle_list)
     if len(center) == 2:
         x_points = center[0] + radius * np.cos(angle_list)
         y_points = center[1] + radius * np.sin(angle_list)
