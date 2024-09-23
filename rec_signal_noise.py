@@ -366,7 +366,7 @@ def process_recoding_thread(angle, angle_name):
     reverbe_sec = 0.5  # 残響
     ch = 4  # マイク数
     is_split = False  # 信号の保存方法 True:各チャンネルごとにファイルを分ける False:1つのファイルにまとめる
-    out_dir = f"{const.MIX_DATA_DIR}\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{int(reverbe_sec * 10):02}sec_{ch}ch_circular_6cm\\{angle_name}"
+    out_dir = f"{const.MIX_DATA_DIR}\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{int(reverbe_sec * 10):02}sec_{ch}ch_circular_6cm_45C\\{angle_name}"
     print('out_dir', out_dir)
 
 
