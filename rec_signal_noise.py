@@ -215,7 +215,7 @@ def recoding(wave_files, out_dir, snr, reverbe_sec, channel=1, is_split=False):
         rec_util.save_wave(result_clean, clean_path)  # 保存
 
 
-def recoding2(wave_files, out_dir, snr, reverbe_sec, reverbe_par, channel=1, is_split=False, angle=np.pi):
+def recoding2(wave_files, out_dir, snr, reverbe_sec, reverbe_par, channel=1, is_split=False, angle=np.pi, angle_name:str=None):
     """ シミュレーションを用いた録音 (部屋のパラメータを計算済み)
 
     Args:
@@ -335,22 +335,22 @@ def recoding2(wave_files, out_dir, snr, reverbe_sec, reverbe_par, channel=1, is_
     else:
         """ チャンネルをまとめて保存 """
         """ noise_reverberation """
-        mix_path = f'{out_dir}/noise_reverbe/{signal_name}_{noise_name}_{snr}db_{int(reverbe_sec*10):02}sec.wav'
+        mix_path = f'{out_dir}/noise_reverbe/{signal_name}_{noise_name}_{snr}db_{int(reverbe_sec*10):02}sec_{angle_name}.wav'
         result_mix = result_mix * np.iinfo(np.int16).max / 15  # スケーリング
         # print(f'result_mix.shape:{result_mix.shape}')
         rec_util.save_wave(result_mix, mix_path)  # 保存
         """ reverberation_only """
-        reverbe_path = f'{out_dir}/reverbe_only/{signal_name}_{int(reverbe_sec*10):02}sec.wav'
+        reverbe_path = f'{out_dir}/reverbe_only/{signal_name}_{int(reverbe_sec*10):02}sec_{angle_name}.wav'
         result_reverbe = result_reverbe * np.iinfo(np.int16).max / 15  # 全てのチャンネルを保存
         # print(f'result_reverbe.shape:{result_reverbe.shape}')               # 確認用
         rec_util.save_wave(result_reverbe, reverbe_path)  # 保存
         """ nosie_only """
-        noise_path = f'{out_dir}/noise_only/{signal_name}_{noise_name}_{snr}db.wav'
+        noise_path = f'{out_dir}/noise_only/{signal_name}_{noise_name}_{snr}db_{angle_name}.wav'
         result_noise = result_noise * np.iinfo(np.int16).max / 15  # 全てのチャンネルを保存
         # print(f'result_nosie.shape:{result_noise.shape}')               # 確認用
         rec_util.save_wave(result_noise, noise_path)  # 保存
         """ clean """
-        clean_path = f'{out_dir}/clean/{signal_name}_{noise_name}_{snr}db_{int(reverbe_sec*10):02}sec.wav'
+        clean_path = f'{out_dir}/clean/{signal_name}_{noise_name}_{snr}db_{int(reverbe_sec*10):02}sec_{angle_name}.wav'
         # clean_path = f'{out_dir}/clean/{signal_name}.wav'
         result_clean = result_clean * np.iinfo(np.int16).max / 15  # 全てのチャンネルを保存
         # print(f'result_clean.shape:{result_clean.shape}')               # 確認用
@@ -364,9 +364,9 @@ def process_recoding_thread(angle, angle_name):
     noise_path = f'{const.SAMPLE_DATA_DIR}\\noise\\{noise_type}.wav'  # 雑音信号のディレクトリ
     snr = 10  # SNR
     reverbe_sec = 0.5  # 残響
-    ch = 4  # マイク数
+    ch = 2  # マイク数
     is_split = False  # 信号の保存方法 True:各チャンネルごとにファイルを分ける False:1つのファイルにまとめる
-    out_dir = f"{const.MIX_DATA_DIR}\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{int(reverbe_sec * 10):02}sec_{ch}ch_10cm\\{angle_name}"
+    out_dir = f"{const.MIX_DATA_DIR}\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{int(reverbe_sec * 10):02}sec_{ch}ch_3cm_all_angle\\"
     print('out_dir', out_dir)
 
 
@@ -388,7 +388,8 @@ def process_recoding_thread(angle, angle_name):
                       reverbe_par=reverbe_par,
                       channel=ch,
                       is_split=is_split,
-                      angle=angle)
+                      angle=angle,
+                      angle_name=angle_name)
 
 if __name__ == '__main__':
     print('main')
@@ -457,8 +458,7 @@ if __name__ == '__main__':
     with ProcessPoolExecutor() as executor:
         executor.map(process_recoding_thread,
                      angle_list,
-                     angle_name_list,
-                     )
+                     angle_name_list,)
 
     # for angle, angle_name in zip(angle_list, angle_name_list):
     #     out_dir = f"{const.MIX_DATA_DIR}\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{int(reverbe_sec * 10):02}sec_{ch}ch_circular_10cm\\{angle_name}"
