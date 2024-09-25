@@ -37,7 +37,7 @@ def plot_room(channel=1):
     room_dim = np.r_[10.0, 10.0, 10.0]  # 部屋の大きさ[x,y,z](m)
     mic_center = room_dim / 2  # アレイマイクの中心[x,y,z](m)
     num_channels = channel  # マイクの個数(チャンネル数)
-    distance = 0.05/2.0  # 各マイクの間隔(m)
+    distance = 0.06/2.0  # 各マイクの間隔(m)
     # mic_coordinate = rec_util.set_mic_coordinate(center=mic_center,
     #                                              num_channels=num_channels,
     #                                              distance=distance)  # 各マイクの座標

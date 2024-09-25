@@ -260,9 +260,9 @@ def recoding2(wave_files, out_dir, snr, reverbe_sec, reverbe_par, channel=1, is_
     num_sources = len(wave_data)  # シミュレーションで用いる音源数
     mic_center = room_dim / 2  # アレイマイクの中心[x,y,z](m)
     num_channels = channel  # マイクの個数(チャンネル数)
-    distance = 0.1  # 各マイクの間隔(m)
-    mic_coordinate = rec_util.set_mic_coordinate(center=mic_center, num_channels=num_channels, distance=distance)  # 線形アレイの場合
-    # mic_coordinate = rec_util.set_circular_mic_coordinate(center=mic_center, num_channels=num_channels, radius=distance)  # 円形アレイの場合
+    distance = 0.06/2  # 各マイクの間隔(m)
+    # mic_coordinate = rec_util.set_mic_coordinate(center=mic_center, num_channels=num_channels, distance=distance)  # 線形アレイの場合
+    mic_coordinate = rec_util.set_circular_mic_coordinate(center=mic_center, num_channels=num_channels, radius=distance)  # 円形アレイの場合
 
     doas = np.array([
         [np.pi/2., np.pi/2],

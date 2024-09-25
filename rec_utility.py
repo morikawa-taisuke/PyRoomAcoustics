@@ -37,7 +37,8 @@ def set_circular_mic_coordinate(center, num_channels, radius):
     :param radius: アレイマイクの半径
     :return coordinate: マイクの座標
     """
-    angle_list = np.linspace(0, 2*np.pi, num_channels, endpoint=False)
+    # angle_list = np.linspace(0, 2*np.pi, num_channels, endpoint=False)	# 回転なし
+    angle_list = np.linspace(0+np.pi/4, 2*np.pi+np.pi/4, num_channels, endpoint=False)	# 45°回転
     # print(angle_list)
     if len(center) == 2:
         x_points = center[0] + radius * np.cos(angle_list)
@@ -193,13 +194,13 @@ def get_scale_noise(signal_data, noise_data, snr):
 	ten_pow = pow(10, snr / 10)  # 10^(snr/10)　10の(snr/10)乗を計算
 	squared_alpah = signal_pawer / (noise_pawer * ten_pow)  # α^2を計算
 	alpha = math.sqrt(squared_alpah)  # αを計算
-	
+
 	scale_noise_data = alpha * noise_data  # 雑音信号の大きさを調整
 	after_snr = round(get_snr(signal_pawer, get_wave_power(scale_noise_data)))
 	# print(f'snr:{type(snr)}')
 	# print(f'befor_snr:{get_snr(signal_pawer,noise_pawer)}')
 	# print(f'after_snr:{type(after_snr)}')
-	
+
 	if after_snr != snr:
 		print(f'not:{after_snr},{snr}')
 	return scale_noise_data
@@ -209,7 +210,7 @@ def nantoka(room_dim):
 	# print('inverse_sabine')
 	volume = np.prod(room_dim)  # 室内体積(volume)を求める
 	# print(f'volume:{volume}')
-	
+
 	# 部屋の総面積を求める
 	edgs_combination = itertools.combinations(room_dim, 2)  # 重複アリの組み合わせ [len(配列),2]
 	# edgs_combination = np.array(list(edgs_combination))
@@ -269,7 +270,7 @@ if __name__ == "__main__":
 	# print(f'len(noise_data):{len(noise_data)}')                 # 確認用
 	scale_nosie = get_scale_noise(target_data, noise_data, 10)  # 雑音の調整
 	# print(f'len(scale_noise):{len(scale_nosie)}')
-	
+
 	room_dim = np.r_[10, 10, 10]
 	doas = np.array([
 		[np.pi / 2., 0],
@@ -280,5 +281,5 @@ if __name__ == "__main__":
 	source_codinate = set_souces_coordinate2(doas, distance, mic_center=mic_center)
 	print(f'source_codinate:{source_codinate}')
 	# """
-	
+
 	print('rec_utility\n')
