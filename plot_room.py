@@ -37,11 +37,12 @@ def plot_room(channel=1):
     room_dim = np.r_[10.0, 10.0, 10.0]  # 部屋の大きさ[x,y,z](m)
     mic_center = room_dim / 2  # アレイマイクの中心[x,y,z](m)
     num_channels = channel  # マイクの個数(チャンネル数)
-    distance = 0.06/2.0  # 各マイクの間隔(m)
+    # distance = 0.06/2  # 各マイクの間隔(m)   線形
     # mic_coordinate = rec_util.set_mic_coordinate(center=mic_center,
     #                                              num_channels=num_channels,
-    #                                              distance=distance)  # 各マイクの座標
-    mic_coordinate = rec_util.set_circular_mic_coordinate(center=room_dim/2, num_channels=channel, radius=distance)
+    #                                              distance=distance)  # 線形 マイクの座標
+    distance = 0.06/2  # 各マイクの間隔(m) 円形
+    mic_coordinate = rec_util.set_circular_mic_coordinate(center=room_dim/2, num_channels=channel, radius=distance)   # 円形 マイクの座標
     doas = np.array([
         [np.pi / 2., np.pi / 2.],  # 話者(音源1)
         [np.pi / 2., np.pi * 0 / 4],  # 雑音(音源2)
@@ -61,12 +62,12 @@ def plot_room(channel=1):
     # ax = fig.add_subplot()
 
     plt.scatter(mic_coordinate[0], mic_coordinate[1], label='mic', marker="D", s=10, edgecolors="b")
-    # plt.scatter(source_coordinate[0, 0], source_coordinate[1, 0], label='speeker', marker="^", s=100)
+    plt.scatter(source_coordinate[0, 0], source_coordinate[1, 0], label='speeker', marker="^", s=100)
     # plt.scatter(source_coordinate[0, 1:], source_coordinate[1, 1:], label='noise', marker="x", s=100)
     plt.xlabel("x")
     plt.ylabel("y")
-    plt.xlim(4.9, 5.1)
-    plt.ylim(4.9, 5.1)
+    plt.xlim(4, 6)
+    plt.ylim(4, 6)
     plt.legend(loc='best', markerscale=0.75)
     plt.show()
 
