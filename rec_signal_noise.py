@@ -259,19 +259,19 @@ def recoding2(wave_files, out_dir, snr, reverbe_sec, reverbe_par, channel=1, is_
     """ 音源のパラメータ """
     sample_rate = rec_conf.sampling_rate  # サンプリング周波数
     """ シミュレーションのパラメータ """
-    room_dim = np.r_[10.0, 10.0, 10.0]  # 部屋の大きさ[x,y,z](m)
+    room_dim = np.r_[3.0, 3.0, 3.0]  # 部屋の大きさ[x,y,z](m)
     num_sources = len(wave_data)  # シミュレーションで用いる音源数
     mic_center = room_dim / 2  # アレイマイクの中心[x,y,z](m)
     num_channels = channel  # マイクの個数(チャンネル数)
-    distance = 0.06/2  # 各マイクの間隔(m)
-    # mic_coordinate = rec_util.set_mic_coordinate(center=mic_center, num_channels=num_channels, distance=distance)  # 線形アレイの場合
-    mic_coordinate = rec_util.set_circular_mic_coordinate(center=mic_center, num_channels=num_channels, radius=distance)  # 円形アレイの場合
+    distance = 0.1  # 各マイクの間隔(m)
+    mic_coordinate = rec_util.set_mic_coordinate(center=mic_center, num_channels=num_channels, distance=distance)  # 線形アレイの場合
+    # mic_coordinate = rec_util.set_circular_mic_coordinate(center=mic_center, num_channels=num_channels, radius=distance)  # 円形アレイの場合
 
     doas = np.array([
         [np.pi/2., np.pi/2],
         [np.pi/2., angle]
     ])  # 音源の方向[仰角, 方位角](ラジアン)
-    distance = [2., 3.]  # 音源とマイクの距離(m)
+    distance = [0.5, 0.7]  # 音源とマイクの距離(m)
 
     """ 部屋の生成 """
     room_mix = pa.ShoeBox(room_dim, fs=sample_rate, max_order=reverbe_par[1], absorption=reverbe_par[0])
@@ -418,7 +418,7 @@ if __name__ == '__main__':
     #                  angle_list,
     #                  angle_name_list,)
 
-    for reverbe in range(4, 6):
+    for reverbe in range(1, 6):
         speech_type = 'subset_DEMAND'
         noise_type = 'hoth'
         target_dir = f'{const.SAMPLE_DATA_DIR}\\speech\\{speech_type}\\'  # 目的信号のディレクトリ
