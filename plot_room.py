@@ -56,19 +56,19 @@ def plot_room(channel=1):
     """ 各音源の座標 """
     source_coordinate = rec_util.set_souces_coordinate2(doas, distance, mic_center)
 
-    print('mic:\n', mic_coordinate)
-    print('sound:\n', source_coordinate)
+    print("mic:\n", mic_coordinate)
+    print("sound:\n", source_coordinate)
     # fig = plt.figure()
     # ax = fig.add_subplot()
 
-    plt.scatter(mic_coordinate[0], mic_coordinate[1], label='mic', marker="D", s=10, edgecolors="b")
-    plt.scatter(source_coordinate[0, 0], source_coordinate[1, 0], label='speeker', marker="^", s=100)
-    # plt.scatter(source_coordinate[0, 1:], source_coordinate[1, 1:], label='noise', marker="x", s=100)
+    plt.scatter(mic_coordinate[0], mic_coordinate[1], label="mic", marker="D", s=10, edgecolors="b")
+    plt.scatter(source_coordinate[0, 0], source_coordinate[1, 0], label="speeker", marker="^", s=100)
+    # plt.scatter(source_coordinate[0, 1:], source_coordinate[1, 1:], label="noise", marker="x", s=100)
     plt.xlabel("x")
     plt.ylabel("y")
     plt.xlim(4, 6)
     plt.ylim(4, 6)
-    plt.legend(loc='best', markerscale=0.75)
+    plt.legend(loc="best", markerscale=0.75)
     plt.show()
 
     """ 部屋の出力 """
@@ -79,8 +79,8 @@ def plot_room(channel=1):
     # plt.show()
 
 
-if __name__ == '__main__':
-    print('main')
+if __name__ == "__main__":
+    print("main")
     # a = np.array([[1., 4.],
     #               [2., 5.],
     #               [3., 6.]])

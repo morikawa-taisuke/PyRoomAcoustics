@@ -75,7 +75,7 @@ def delay_signal(wave_files, out_dir, is_split=False):
 	None
 	"""
 	""" ファイル名の取得 """
-	file_name = rec_util.get_file_name(wave_files[0]).replace('01ch_', '')	# ファイル名の取得とch番号の削除
+	file_name = rec_util.get_file_name(wave_files[0]).replace("01ch_", "")	# ファイル名の取得とch番号の削除
 	print(file_name)
 	sample_rate = rec_conf.sampling_rate  # サンプリング周波数
 	""" サンプル数の調査 """
@@ -135,13 +135,13 @@ def delay_signal(wave_files, out_dir, is_split=False):
 	if is_split:
 		"""チャンネルごとにファイルを分けて保存する"""
 		for i in range(len(wave_files)):
-			out_path = f'./{out_dir}_split/{i + 1:02}ch/{i + 1:02}ch_{file_name}.wav'
+			out_path = f"./{out_dir}_split/{i + 1:02}ch/{i + 1:02}ch_{file_name}.wav"
 			rec_util.save_wave(delay_wave_list[i, :] * np.iinfo(np.int16).max / 15.0, out_path, sample_rate)
 	else:
 		""" チャンネルをまとめて保存 """
-		out_path = f'./{out_dir}/{file_name}.wav'
+		out_path = f"./{out_dir}/{file_name}.wav"
 		delay_wave_list = delay_wave_list * np.iinfo(np.int16).max  # スケーリング
-		# print(f'result_mix.shape:{result_mix.shape}')
+		# print(f"result_mix.shape:{result_mix.shape}")
 		rec_util.save_wave(delay_wave_list, out_path)  # 保存
 
 
@@ -159,7 +159,7 @@ def new_delay_signal(wave_files, out_dir, delay_time, is_split=False):
 	None
 	"""
 	""" ファイル名の取得 """
-	file_name = rec_util.get_file_name(wave_files[0]).replace('01ch_', '')  # ファイル名の取得とch番号の削除
+	file_name = rec_util.get_file_name(wave_files[0]).replace("01ch_", "")  # ファイル名の取得とch番号の削除
 	print(file_name)
 	sample_rate = rec_conf.sampling_rate  # サンプリング周波数
 	""" 音声ファイルの読み込み """
@@ -184,52 +184,52 @@ def new_delay_signal(wave_files, out_dir, delay_time, is_split=False):
 	if is_split:
 		"""チャンネルごとにファイルを分けて保存する"""
 		for i in range(len(wave_files)):
-			out_path = f'./{out_dir}/split/{i + 1:02}ch/{i + 1:02}ch_{file_name}.wav'
+			out_path = f"./{out_dir}/split/{i + 1:02}ch/{i + 1:02}ch_{file_name}.wav"
 			rec_util.save_wave(delay_wave_list[i, :] * np.iinfo(np.int16).max / 15.0, out_path, sample_rate)
 	else:
 		""" チャンネルをまとめて保存 """
-		out_path = f'./{out_dir}/{file_name}.wav'
+		out_path = f"./{out_dir}/{file_name}.wav"
 		delay_wave_list = delay_wave_list * np.iinfo(np.int16).max  # スケーリング
-		# print(f'result_mix.shape:{result_mix.shape}')
+		# print(f"result_mix.shape:{result_mix.shape}")
 		rec_util.save_wave(delay_wave_list, out_path)  # 保存
 
 
-if __name__ == '__main__':
-	# list = ['./sound_data/rec_data/JA_07sec_4ch/training/clean_split/01ch/01ch_JA01F049.wav',
-	# 		'./sound_data/rec_data/JA_07sec_4ch/training/clean_split/02ch/02ch_JA01F049.wav',
-	# 		'./sound_data/rec_data/JA_07sec_4ch/training/clean_split/03ch/03ch_JA01F049.wav',
-	# 		'./sound_data/rec_data/JA_07sec_4ch/training/clean_split/04ch/04ch_JA01F049.wav']
+if __name__ == "__main__":
+	# list = ["./sound_data/rec_data/JA_07sec_4ch/training/clean_split/01ch/01ch_JA01F049.wav",
+	# 		"./sound_data/rec_data/JA_07sec_4ch/training/clean_split/02ch/02ch_JA01F049.wav",
+	# 		"./sound_data/rec_data/JA_07sec_4ch/training/clean_split/03ch/03ch_JA01F049.wav",
+	# 		"./sound_data/rec_data/JA_07sec_4ch/training/clean_split/04ch/04ch_JA01F049.wav"]
 	
-	dir_path = './sound_data/rec_data/JA_hoth_10dB_05sec_4ch/test/'
-	split_dir_path = f'{dir_path}/split/'
+	dir_path = "./sound_data/rec_data/JA_hoth_10dB_05sec_4ch/test/"
+	split_dir_path = f"{dir_path}/split/"
 	print(split_dir_path)
-	out_dir = f'{dir_path}/delay/'
+	out_dir = f"{dir_path}/delay/"
 	sub_dir_list = my_func.get_subdir_list(split_dir_path)
 	# print(sub_dir_list)
-	list = [f'{dir_path}/split/clean_split/01ch/01ch_JA04F085.wav',
-	        f'{dir_path}/split/clean_split/02ch/02ch_JA04F085.wav',
-	        f'{dir_path}/split/clean_split/03ch/03ch_JA04F085.wav',
-	        f'{dir_path}/split/clean_split/04ch/04ch_JA04F085.wav']
+	list = [f"{dir_path}/split/clean_split/01ch/01ch_JA04F085.wav",
+	        f"{dir_path}/split/clean_split/02ch/02ch_JA04F085.wav",
+	        f"{dir_path}/split/clean_split/03ch/03ch_JA04F085.wav",
+	        f"{dir_path}/split/clean_split/04ch/04ch_JA04F085.wav"]
 	delay_time = get_delay_time(list)
 	for sub_dir in sub_dir_list:
-		ch01 = f'{split_dir_path}/{sub_dir}/01ch/'
-		ch02 = f'{split_dir_path}/{sub_dir}/02ch/'
-		ch03 = f'{split_dir_path}/{sub_dir}/03ch/'
-		ch04 = f'{split_dir_path}/{sub_dir}/04ch/'
+		ch01 = f"{split_dir_path}/{sub_dir}/01ch/"
+		ch02 = f"{split_dir_path}/{sub_dir}/02ch/"
+		ch03 = f"{split_dir_path}/{sub_dir}/03ch/"
+		ch04 = f"{split_dir_path}/{sub_dir}/04ch/"
 		list1 = my_func.get_wave_filelist(ch01)
 		list2 = my_func.get_wave_filelist(ch02)
 		list3 = my_func.get_wave_filelist(ch03)
 		list4 = my_func.get_wave_filelist(ch04)
 		for file_list in zip(list1, list2, list3, list4):
-			new_delay_signal(wave_files=file_list, out_dir=f'{out_dir}/{sub_dir}/', delay_time=delay_time, is_split=False)
+			new_delay_signal(wave_files=file_list, out_dir=f"{out_dir}/{sub_dir}/", delay_time=delay_time, is_split=False)
 
-	# ch01 = './sound_data/rec_data/JA_07sec_4ch/training/reverbe_only_split/01ch/'
-	# ch02 = './sound_data/rec_data/JA_07sec_4ch/training/reverbe_only_split/02ch/'
-	# ch03 = './sound_data/rec_data/JA_07sec_4ch/training/reverbe_only_split/03ch/'
-	# ch04 = './sound_data/rec_data/JA_07sec_4ch/training/reverbe_only_split/04ch/'
+	# ch01 = "./sound_data/rec_data/JA_07sec_4ch/training/reverbe_only_split/01ch/"
+	# ch02 = "./sound_data/rec_data/JA_07sec_4ch/training/reverbe_only_split/02ch/"
+	# ch03 = "./sound_data/rec_data/JA_07sec_4ch/training/reverbe_only_split/03ch/"
+	# ch04 = "./sound_data/rec_data/JA_07sec_4ch/training/reverbe_only_split/04ch/"
 	# list1 = my_func.get_wave_filelist(ch01)
 	# list2 = my_func.get_wave_filelist(ch02)
 	# list3 = my_func.get_wave_filelist(ch03)
 	# list4 = my_func.get_wave_filelist(ch04)
 	# for file_list in zip(list1, list2, list3, list4):
-	# 	delay_signal(file_list, out_dir='./sound_data/rec_data/JA_07sec_4ch/training/reverbe_delay', is_split=True)
+	# 	delay_signal(file_list, out_dir="./sound_data/rec_data/JA_07sec_4ch/training/reverbe_delay", is_split=True)

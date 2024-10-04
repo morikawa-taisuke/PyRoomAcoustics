@@ -64,7 +64,7 @@ def set_souces_coordinate(doas, distance, mic_center):
 	:param mic_center: アレイマイクの中心点
 	:return :
 	"""
-	# print('set_souces')
+	# print("set_souces")
 	souces_coordinate = np.zeros((3, doas.shape[0]), dtype=doas.dtype)
 	souces_coordinate[0, :] = np.cos(doas[:, 1]) * np.sin(doas[:, 0])
 	souces_coordinate[1, :] = np.sin(doas[:, 1]) * np.sin(doas[:, 0])
@@ -82,13 +82,13 @@ def set_souces_coordinate2(doas, distance, mic_center):
 	:param mic_center: アレイマイクの中心点
 	:return :
 	"""
-	# print('set_souces')
+	# print("set_souces")
 	souces_coordinate = np.zeros((3, doas.shape[0]), dtype=doas.dtype)
 	souces_coordinate[0, :] = np.cos(doas[:, 1]) * np.sin(doas[:, 0])  # x
 	souces_coordinate[1, :] = np.sin(doas[:, 1]) * np.sin(doas[:, 0])  # y
 	souces_coordinate[2, :] = np.cos(doas[:, 0])  # z
-	# print(f'souces_coordinate.shape:{souces_coordinate.shape}')
-	# print(f'np.array(distance).shape:{np.array(distance).shape}')
+	# print(f"souces_coordinate.shape:{souces_coordinate.shape}")
+	# print(f"np.array(distance).shape:{np.array(distance).shape}")
 	for idx in range(doas.shape[0]):
 		souces_coordinate[:, idx] *= distance[idx]
 	souces_coordinate += mic_center[:, None]
@@ -140,7 +140,7 @@ def save_wave(signal, file_name, sample_rate=rec_conf.sampling_rate):
 	""" 2バイトのデータに変換 """
 	signal = signal.astype(np.int16)
 	""" 出力ファイルを書き込み専用で開く """
-	wave_out = wave.open(file_name, 'w')
+	wave_out = wave.open(file_name, "w")
 	""" 出力の設定 """
 	wave_out.setnchannels(1)  # モノラル:1、ステレオ:2
 	wave_out.setsampwidth(2)  # サンプルサイズ2byte
@@ -158,8 +158,8 @@ def get_wave_power(wave_data):
 	:return power:
 	"""
 	power = sum(wave_data ** 2)
-	# print(f'type(power):{type(power)}') # 確認用
-	# print(f'power.shape:{power.shape}') # 確認用
+	# print(f"type(power):{type(power)}") # 確認用
+	# print(f"power.shape:{power.shape}") # 確認用
 	# print(power)                        # 確認用
 	# data = np.array([1,2,3])
 	# squea_data = data**2
@@ -197,26 +197,26 @@ def get_scale_noise(signal_data, noise_data, snr):
 
 	scale_noise_data = alpha * noise_data  # 雑音信号の大きさを調整
 	after_snr = round(get_snr(signal_pawer, get_wave_power(scale_noise_data)))
-	# print(f'snr:{type(snr)}')
-	# print(f'befor_snr:{get_snr(signal_pawer,noise_pawer)}')
-	# print(f'after_snr:{type(after_snr)}')
+	# print(f"snr:{type(snr)}")
+	# print(f"befor_snr:{get_snr(signal_pawer,noise_pawer)}")
+	# print(f"after_snr:{type(after_snr)}")
 
 	if after_snr != snr:
-		print(f'not:{after_snr},{snr}')
+		print(f"not:{after_snr},{snr}")
 	return scale_noise_data
 
 
 def nantoka(room_dim):
-	# print('inverse_sabine')
+	# print("inverse_sabine")
 	volume = np.prod(room_dim)  # 室内体積(volume)を求める
-	# print(f'volume:{volume}')
+	# print(f"volume:{volume}")
 
 	# 部屋の総面積を求める
 	edgs_combination = itertools.combinations(room_dim, 2)  # 重複アリの組み合わせ [len(配列),2]
 	# edgs_combination = np.array(list(edgs_combination))
-	# print(f'edgs_combination:{edgs_combination}')
+	# print(f"edgs_combination:{edgs_combination}")
 	area = [l1 * l2 for l1, l2 in edgs_combination]  # 各面積(area)を求める
-	# print(f'area:{area}')
+	# print(f"area:{area}")
 	sphere = 2 * np.sum(area)  # 室内総面積(sphere)を求める
 	sab_coef = 24
 
@@ -243,7 +243,7 @@ def get_dir_name(dir_path):
 
 def exists_dir(dir_path):
 	_, ext = os.path.splitext(dir_path)
-	# print('util : exists_dir', _, ext)
+	# print("util : exists_dir", _, ext)
 	if len(ext) == 0 and not os.path.exists(dir_path):
 		os.makedirs(dir_path, exist_ok=True)
 	elif not len(ext) == 0 and not os.path.exists(get_dir_name(dir_path)):
@@ -252,10 +252,10 @@ def exists_dir(dir_path):
 
 
 if __name__ == "__main__":
-	print('\nrec_utility')
-	"""print('main')
+	print("\nrec_utility")
+	"""print("main")
 	room_dim=[10,20,30]
-	print(f'room_dim:{room_dim}')
+	print(f"room_dim:{room_dim}")
  
 	nantoka(room_dim)"""
 	# """
@@ -266,10 +266,10 @@ if __name__ == "__main__":
 	noise_data = load_wave_data(noise_path)
 	start = random.randint(0, len(noise_data) - len(target_data))  # スタート位置をランダムに決定
 	noise_data = noise_data[start: start + len(target_data)]  # noise_dataを切り出す
-	# print(f'len(target_data):{len(target_data)}')               # 確認用
-	# print(f'len(noise_data):{len(noise_data)}')                 # 確認用
+	# print(f"len(target_data):{len(target_data)}")               # 確認用
+	# print(f"len(noise_data):{len(noise_data)}")                 # 確認用
 	scale_nosie = get_scale_noise(target_data, noise_data, 10)  # 雑音の調整
-	# print(f'len(scale_noise):{len(scale_nosie)}')
+	# print(f"len(scale_noise):{len(scale_nosie)}")
 
 	room_dim = np.r_[10, 10, 10]
 	doas = np.array([
@@ -279,7 +279,7 @@ if __name__ == "__main__":
 	distance = [1., 2.]
 	mic_center = room_dim / 2.
 	source_codinate = set_souces_coordinate2(doas, distance, mic_center=mic_center)
-	print(f'source_codinate:{source_codinate}')
+	print(f"source_codinate:{source_codinate}")
 	# """
 
-	print('rec_utility\n')
+	print("rec_utility\n")

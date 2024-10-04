@@ -18,7 +18,7 @@ def serch_reverbe_sec(reverbe_sec, channel=1):
     cnt = 0
     room_dim = np.r_[10.0, 10.0, 10.0]
     """ 音源の読み込み """
-    target_data = rec_util.load_wave_data(f'sound_data/sample_data/speech/JA/test/JA04F085.wav')
+    target_data = rec_util.load_wave_data(f"sound_data/sample_data/speech/JA/test/JA04F085.wav")
     noise_data = target_data
     wave_data = []  # 1つの配列に格納
     wave_data.append(target_data)
@@ -55,9 +55,9 @@ def serch_reverbe_sec(reverbe_sec, channel=1):
             break
         cnt+=1
         reverbe+=0.01
-        # print(f'[{cnt}]rt60:{np.mean(rt60)}')
-    print(f'max_order:{max_order}\ne_absorption:{e_absorption}')
-    print(f'rt60={np.mean(rt60)}')
+        # print(f"[{cnt}]rt60:{np.mean(rt60)}")
+    print(f"max_order:{max_order}\ne_absorption:{e_absorption}")
+    print(f"rt60={np.mean(rt60)}")
     return e_absorption, max_order
 
 def recoding(wave_files, out_dir, snr, reverbe_sec, channel=1, is_split=False):
@@ -78,22 +78,22 @@ def recoding(wave_files, out_dir, snr, reverbe_sec, channel=1, is_split=False):
     """ ファイル名の取得 """
     signal_name = rec_util.get_file_name(wave_files[0])
     noise_name = rec_util.get_file_name(wave_files[1])
-    print(f'signal_name:{signal_name}')
-    print(f'noise_name:{noise_name}')
+    print(f"signal_name:{signal_name}")
+    print(f"noise_name:{noise_name}")
 
     """ 音源の読み込み """
     target_data = rec_util.load_wave_data(wave_files[0])
     noise_data = rec_util.load_wave_data(wave_files[1])
-    # print(f'target_data.shape:{target_data.shape}')     # 確認用
-    # print(f'noise_data.shape:{noise_data.shape}')       # 確認用
+    # print(f"target_data.shape:{target_data.shape}")     # 確認用
+    # print(f"noise_data.shape:{noise_data.shape}")       # 確認用
 
     """ 雑音データをランダムに切り出す """
     start = random.randint(0, len(noise_data) - len(target_data))  # スタート位置をランダムに決定
     noise_data = noise_data[start: start + len(target_data)]  # noise_dataを切り出す
     scale_nosie = rec_util.get_scale_noise(target_data, noise_data, snr)  # noise_dataの大きさを調節
-    # print(f'len(target_data):{len(target_data)}')   # 確認用
-    # print(f'len(noise_data):{len(noise_data)}') # 確認用
-    # print(f'len(scale_nosie):{len(scale_nosie)}')   # 確認用
+    # print(f"len(target_data):{len(target_data)}")   # 確認用
+    # print(f"len(noise_data):{len(noise_data)}") # 確認用
+    # print(f"len(scale_nosie):{len(scale_nosie)}")   # 確認用
 
     wave_data = []  # 1つの配列に格納
     wave_data.append(target_data)
@@ -159,13 +159,13 @@ def recoding(wave_files, out_dir, snr, reverbe_sec, channel=1, is_split=False):
 
     """ 残響時間の確認 """
     # rt60 = room_mix.measure_rt60()
-    # print(f'mix：{rt60}')
+    # print(f"mix：{rt60}")
     # rt60 = room_reverbe.measure_rt60()
-    # print(f'reverbe：{rt60}')
+    # print(f"reverbe：{rt60}")
     # rt60 = room_noise.measure_rt60()
-    # print(f'noise：{rt60}')
+    # print(f"noise：{rt60}")
     # rt60 = room_clean.measure_rt60()
-    # print(f'clean：{rt60}')
+    # print(f"clean：{rt60}")
 
 
     """ 畳み込んだ波形をファイルに書き込む """
@@ -173,42 +173,42 @@ def recoding(wave_files, out_dir, snr, reverbe_sec, channel=1, is_split=False):
         """チャンネルごとにファイルを分けて保存する"""
         for i in range(num_channels):
             """ noise_reverberation """
-            mix_path = f'./{out_dir}/mix_split/{i+1:02}ch/{i+1:02}ch_{signal_name}_{noise_name}_{snr}db_{reverbe_sec*10}sec.wav'
+            mix_path = f"./{out_dir}/mix_split/{i+1:02}ch/{i+1:02}ch_{signal_name}_{noise_name}_{snr}db_{reverbe_sec*10}sec.wav"
             rec_util.save_wave(result_mix[i, :] * np.iinfo(np.int16).max / 20.,
                                         mix_path, sample_rate)
             """ reverberation_only """
-            reverbe_path = f'./{out_dir}/reverbe_split/{i + 1:02}ch/{i + 1:02}ch_{signal_name}_{reverbe_sec*10}sec.wav'
+            reverbe_path = f"./{out_dir}/reverbe_split/{i + 1:02}ch/{i + 1:02}ch_{signal_name}_{reverbe_sec*10}sec.wav"
             rec_util.save_wave(result_mix[i, :] * np.iinfo(np.int16).max / 20.,
                                         reverbe_path, sample_rate)
             """ noise_only """
-            noise_path = f'./{out_dir}/noise_split/{i + 1:02}ch/{i + 1:02}ch_{signal_name}_{noise_name}_{snr}db.wav'
+            noise_path = f"./{out_dir}/noise_split/{i + 1:02}ch/{i + 1:02}ch_{signal_name}_{noise_name}_{snr}db.wav"
             rec_util.save_wave(result_noise[i, :] * np.iinfo(np.int16).max / 20.,
                                         noise_path, sample_rate)
             """ clean """
-            clean_path = f'./{out_dir}/clean_split/{i + 1:02}ch/{i + 1:02}ch_{signal_name}.wav'
+            clean_path = f"./{out_dir}/clean_split/{i + 1:02}ch/{i + 1:02}ch_{signal_name}.wav"
             rec_util.save_wave(result_clean[i, :] * np.iinfo(np.int16).max / 20.,
                                         clean_path, sample_rate)
     else:
         """ チャンネルをまとめて保存 """
         """ noise_reverberation """
-        mix_path = f'./{out_dir}/noise_reverberation/{signal_name}_{noise_name}_{snr}db_{reverbe_sec*10}sec.wav'
+        mix_path = f"./{out_dir}/noise_reverberation/{signal_name}_{noise_name}_{snr}db_{reverbe_sec*10}sec.wav"
         result_mix = result_mix * np.iinfo(np.int16).max / 15  # スケーリング
-        # print(f'result_mix.shape:{result_mix.shape}')
+        # print(f"result_mix.shape:{result_mix.shape}")
         rec_util.save_wave(result_mix, mix_path)  # 保存
         """ reverberation_only """
-        reverbe_path = f'./{out_dir}/reverberation_only/{signal_name}_{reverbe_sec*10}sec.wav'
+        reverbe_path = f"./{out_dir}/reverberation_only/{signal_name}_{reverbe_sec*10}sec.wav"
         result_reverbe = result_reverbe * np.iinfo(np.int16).max / 15  # 全てのチャンネルを保存
-        # print(f'result_reverbe.shape:{result_reverbe.shape}')               # 確認用
+        # print(f"result_reverbe.shape:{result_reverbe.shape}")               # 確認用
         rec_util.save_wave(result_reverbe, reverbe_path)  # 保存
         """ nosie_only """
-        noise_path = f'./{out_dir}/noise_only/{signal_name}_{noise_name}_{snr}db.wav'
+        noise_path = f"./{out_dir}/noise_only/{signal_name}_{noise_name}_{snr}db.wav"
         result_noise = result_noise * np.iinfo(np.int16).max / 15  # 全てのチャンネルを保存
-        # print(f'result_nosie.shape:{result_noise.shape}')               # 確認用
+        # print(f"result_nosie.shape:{result_noise.shape}")               # 確認用
         rec_util.save_wave(result_noise, noise_path)  # 保存
         """ clean """
-        clean_path = f'./{out_dir}/clean/{signal_name}.wav'
+        clean_path = f"./{out_dir}/clean/{signal_name}.wav"
         result_clean = result_clean * np.iinfo(np.int16).max / 15  # 全てのチャンネルを保存
-        # print(f'result_clean.shape:{result_clean.shape}')               # 確認用
+        # print(f"result_clean.shape:{result_clean.shape}")               # 確認用
         rec_util.save_wave(result_clean, clean_path)  # 保存
 
 def recoding2(wave_files, out_dir, snr, reverbe_par, channel=1, is_split=False):
@@ -229,22 +229,22 @@ def recoding2(wave_files, out_dir, snr, reverbe_par, channel=1, is_split=False):
     """ ファイル名の取得 """
     signal_name = rec_util.get_file_name(wave_files[0])
     # noise_name = rec_util.get_file_name(wave_files[1])
-    print(f'signal_name:{signal_name}')
-    # print(f'noise_name:{noise_name}')
+    print(f"signal_name:{signal_name}")
+    # print(f"noise_name:{noise_name}")
 
     """ 音源の読み込み """
     target_data = rec_util.load_wave_data(wave_files[0])
     # noise_data = rec_util.load_wave_data(wave_files[1])
-    # print(f'target_data.shape:{target_data.shape}')     # 確認用
-    # print(f'noise_data.shape:{noise_data.shape}')       # 確認用
+    # print(f"target_data.shape:{target_data.shape}")     # 確認用
+    # print(f"noise_data.shape:{noise_data.shape}")       # 確認用
 
     """ 雑音データをランダムに切り出す """
     # start = random.randint(0, len(noise_data) - len(target_data))  # スタート位置をランダムに決定
     # noise_data = noise_data[start: start + len(target_data)]  # noise_dataを切り出す
     # scale_nosie = rec_util.get_scale_noise(target_data, noise_data, snr)  # noise_dataの大きさを調節
-    # print(f'len(target_data):{len(target_data)}')   # 確認用
-    # print(f'len(noise_data):{len(noise_data)}') # 確認用
-    # print(f'len(scale_nosie):{len(scale_nosie)}')   # 確認用
+    # print(f"len(target_data):{len(target_data)}")   # 確認用
+    # print(f"len(noise_data):{len(noise_data)}") # 確認用
+    # print(f"len(scale_nosie):{len(scale_nosie)}")   # 確認用
 
     wave_data = []  # 1つの配列に格納
     wave_data.append(target_data)
@@ -262,7 +262,7 @@ def recoding2(wave_files, out_dir, snr, reverbe_par, channel=1, is_split=False):
                                                num_channels=num_channels,
                                                distance=distance)  # 各マイクの座標
 
-    # print(f'mic_codinate:{mic_codinate}')
+    # print(f"mic_codinate:{mic_codinate}")
 
     doas = np.array([
         [np.pi / 2., np.pi / 2],
@@ -298,13 +298,13 @@ def recoding2(wave_files, out_dir, snr, reverbe_par, channel=1, is_split=False):
 
     """ 残響時間の確認 """
     # rt60 = room_mix.measure_rt60()
-    # print(f'mix：{rt60}')
+    # print(f"mix：{rt60}")
     # rt60 = room_reverbe.measure_rt60()
-    # print(f'reverbe：{rt60}')
+    # print(f"reverbe：{rt60}")
     # rt60 = room_noise.measure_rt60()
-    # print(f'noise：{rt60}')
+    # print(f"noise：{rt60}")
     # rt60 = room_clean.measure_rt60()
-    # print(f'clean：{rt60}')
+    # print(f"clean：{rt60}")
 
 
     """ 畳み込んだ波形をファイルに書き込む """
@@ -312,36 +312,36 @@ def recoding2(wave_files, out_dir, snr, reverbe_par, channel=1, is_split=False):
         """チャンネルごとにファイルを分けて保存する"""
         for i in range(num_channels):
             """ reverberation_only """
-            reverbe_path = f'./{out_dir}/reverbe_split/{i + 1:02}ch/{i + 1:02}ch_{signal_name}_{reverbe_sec*10}sec.wav'
+            reverbe_path = f"./{out_dir}/reverbe_split/{i + 1:02}ch/{i + 1:02}ch_{signal_name}_{reverbe_sec*10}sec.wav"
             rec_util.save_wave(result_reverbe[i, :] * np.iinfo(np.int16).max / 15., reverbe_path, sample_rate)
 
             """ clean """
-            clean_path = f'./{out_dir}/clean_split/{i + 1:02}ch/{i + 1:02}ch_{signal_name}.wav'
+            clean_path = f"./{out_dir}/clean_split/{i + 1:02}ch/{i + 1:02}ch_{signal_name}.wav"
             rec_util.save_wave(result_clean[i, :] * np.iinfo(np.int16).max / 15., clean_path, sample_rate)
     else:
         """ チャンネルをまとめて保存 """
         """ reverberation_only """
-        reverbe_path = f'./{out_dir}/reverberation_only/{signal_name}_{reverbe_sec*10}sec.wav'
+        reverbe_path = f"./{out_dir}/reverberation_only/{signal_name}_{reverbe_sec*10}sec.wav"
         result_reverbe = result_reverbe * np.iinfo(np.int16).max / 15.  # 全てのチャンネルを保存
-        # print(f'result_reverbe.shape:{result_reverbe.shape}')               # 確認用
+        # print(f"result_reverbe.shape:{result_reverbe.shape}")               # 確認用
         rec_util.save_wave(result_reverbe, reverbe_path)  # 保存
 
         """ clean """
-        clean_path = f'./{out_dir}/clean/{signal_name}.wav'
+        clean_path = f"./{out_dir}/clean/{signal_name}.wav"
         result_clean = result_clean * np.iinfo(np.int16).max / 15.  # 全てのチャンネルを保存
-        # print(f'result_clean.shape:{result_clean.shape}')               # 確認用
+        # print(f"result_clean.shape:{result_clean.shape}")               # 確認用
         rec_util.save_wave(result_clean, clean_path)  # 保存
 
-if __name__ == '__main__':
-    print('main')
+if __name__ == "__main__":
+    print("main")
     """畳み込みに用いる音声波形(ディレクトリ)"""
-    # noise_list = ['hoth', 'white']
-    # learning_list = ['noise_reverberation', 'reverberation_only']
-    # speech_list = ['JA', 'CMU']
-    # type_list = ['training', 'test']
+    # noise_list = ["hoth", "white"]
+    # learning_list = ["noise_reverberation", "reverberation_only"]
+    # speech_list = ["JA", "CMU"]
+    # type_list = ["training", "test"]
     #
-    # speech = 'CMU'
-    # noise = 'white'
+    # speech = "CMU"
+    # noise = "white"
     #
     # channel = 1
     # reverberation_sec = 0.7
@@ -356,8 +356,8 @@ if __name__ == '__main__':
     #     """音声ファイルリストの作成"""
     #     target_list = my_func.get_wave_filelist(target_dir)
     #     noise_list = my_func.get_wave_filelist(noise_dir)
-    #     # print(f'len(target_list):{len(target_list)}')
-    #     # print(f'len(noise_list):{len(noise_list)}')
+    #     # print(f"len(target_list):{len(target_list)}")
+    #     # print(f"len(noise_list):{len(noise_list)}")
     #
     #     # for trget_file in target_list:
     #     #   """録音(シミュレーション)"""
@@ -368,7 +368,7 @@ if __name__ == '__main__':
     #             wave_file = []
     #             wave_file.append(target_file)
     #             wave_file.append(noise_file)
-    #             # print(f'wave_file:{wave_file}') # 確認用
+    #             # print(f"wave_file:{wave_file}") # 確認用
     #
     #             """録音(シミュレーション)"""
     #             # main(wave_file, out_dir)
@@ -378,15 +378,15 @@ if __name__ == '__main__':
     #                          reverberation_sec=reverberation_sec,
     #                          channel=channel)
 
-    target_dir = f'./sound_data/sample_data/speech/JA/training/'
-    noise_dir = f'./sound_data/sample_data/noise/'
+    target_dir = f"./sound_data/sample_data/speech/JA/training/"
+    noise_dir = f"./sound_data/sample_data/noise/"
     out_dir = f"./sound_data/rec_data/JA_07sec_4ch/training/"
 
     """音声ファイルリストの作成"""
     target_list = my_func.get_wave_filelist(target_dir)
     noise_list = my_func.get_wave_filelist(noise_dir)
-    # print(f'len(target_list):{len(target_list)}')
-    # print(f'len(noise_list):{len(noise_list)}')
+    # print(f"len(target_list):{len(target_list)}")
+    # print(f"len(noise_list):{len(noise_list)}")
 
     """ シミュレーションの設定"""
     snr = 10    # SNR
@@ -401,7 +401,7 @@ if __name__ == '__main__':
         wave_file = []
         wave_file.append(target_file)
         # wave_file.append(noise_file)
-        # print(f'wave_file:{wave_file}') # 確認用
+        # print(f"wave_file:{wave_file}") # 確認用
 
         """録音(シミュレーション)"""
         # recoding(wave_files=wave_file, out_dir=out_dir, snr=snr, reverbe_sec=reverbe_sec,channel=channel, is_split=is_split)

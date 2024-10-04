@@ -56,7 +56,7 @@ def exists_dir(dir_name):
         ext: 拡張子
     """
     _, ext = os.path.splitext(dir_name)
-    # print('util : exists_dir', _, ext)
+    # print("util : exists_dir", _, ext)
     if len(ext) == 0 and not os.path.exists(dir_name):
         os.makedirs(dir_name, exist_ok=True)
     elif not len(ext) == 0 and not os.path.exists(get_dirname(dir_name)):
@@ -82,7 +82,7 @@ def get_subdir_list(path:str)->list:
     |
     -----dir2
 
-    get_dir_list('./dir')->['dir1', 'dir2']
+    get_dir_list("./dir")->["dir1", "dir2"]
     Parameters
     ----------
     path(str):  親ディレクトリ(dir)
@@ -109,8 +109,8 @@ def get_wave_filelist(path):
     else:
         # 入力が単一ファイルの場合
         filelist = [path]
-    #print('number of file', len(filelist))
-    # print('file_list:',filelist)
+    #print("number of file", len(filelist))
+    # print("file_list:",filelist)
 
     return filelist
 
@@ -153,7 +153,7 @@ def save_wav(path, wav, prm):
     f = wave.Wave_write(path)
     f.setparams(prm)
     #f.setframerate(SR)
-    f.writeframes(array.array('h', wav.astype(np.int16)).tobytes())
+    f.writeframes(array.array("h", wav.astype(np.int16)).tobytes())
     f.close()
 
 def make_filename(file_A,file_B):
