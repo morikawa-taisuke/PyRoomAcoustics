@@ -429,7 +429,7 @@ if __name__ == "__main__":
         is_split = False  # 信号の保存方法 True:各チャンネルごとにファイルを分ける False:1つのファイルにまとめる
         print(reverbe)
         reverbe_sec = reverbe*0.1  # 残響
-        out_dir = f"{const.MIX_DATA_DIR}\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{int(reverbe_sec * 10):02}sec_{ch}ch\\"
+        out_dir = f"{const.MIX_DATA_DIR}\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{ch}ch\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{int(reverbe_sec * 10):02}sec_{ch}ch\\"
         print("out_dir", out_dir)
         """録音(シミュレーション)"""
         reverbe_par = serch_reverbe_sec(reverbe_sec=reverbe_sec, channel=ch)  # 任意の残響になるようなパラメータを求める
