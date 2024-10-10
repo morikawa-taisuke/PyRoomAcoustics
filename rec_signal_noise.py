@@ -360,7 +360,7 @@ def recoding2(wave_files, out_dir, snr, reverbe_sec, reverbe_par, channel=1, is_
         rec_util.save_wave(result_clean, clean_path)  # 保存
 
 def process_recoding_thread(angle, angle_name, reverbe_sec = 0.5):
-    speech_type = "subset_DEMAND"
+    speech_type = "DEMAND"
     noise_type = "hoth"
     target_dir = f"{const.SAMPLE_DATA_DIR}\\speech\\{speech_type}\\"  # 目的信号のディレクトリ
     sub_dir_list = my_func.get_subdir_list(target_dir)
@@ -368,7 +368,7 @@ def process_recoding_thread(angle, angle_name, reverbe_sec = 0.5):
     snr = 10  # SNR
     ch = 4  # マイク数
     is_split = False  # 信号の保存方法 True:各チャンネルごとにファイルを分ける False:1つのファイルにまとめる
-    out_dir = f"{const.MIX_DATA_DIR}\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{ch}ch\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{int(reverbe_sec * 10):02}sec_{ch}ch"
+    out_dir = f"{const.MIX_DATA_DIR}\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{ch}ch\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{ch}ch_{int(reverbe_sec * 10):02}sec\\{angle_name}"
     print("out_dir", out_dir)
 
 
