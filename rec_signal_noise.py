@@ -263,7 +263,7 @@ def recoding2(wave_files, out_dir, snr, reverbe_sec, reverbe_par, channel=1, is_
     num_sources = len(wave_data)  # シミュレーションで用いる音源数
     mic_center = room_dim / 2  # アレイマイクの中心[x,y,z](m)
     num_channels = channel  # マイクの個数(チャンネル数)
-    distance = 0.03  # 各マイクの間隔(m)
+    distance = 0.06  # 各マイクの間隔(m)
     mic_coordinate = rec_util.set_mic_coordinate(center=mic_center, num_channels=num_channels, distance=distance)  # 線形アレイの場合
     # mic_coordinate = rec_util.set_circular_mic_coordinate(center=mic_center, num_channels=num_channels, radius=distance)  # 円形アレイの場合
 
@@ -368,7 +368,7 @@ def process_recoding_thread(angle, angle_name, reverbe_sec = 0.5):
     snr = 10  # SNR
     ch = 4  # マイク数
     is_split = False  # 信号の保存方法 True:各チャンネルごとにファイルを分ける False:1つのファイルにまとめる
-    out_dir = f"{const.MIX_DATA_DIR}\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{ch}ch_3cm\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{int(reverbe_sec * 10):02}sec_{ch}ch_cm\\{angle_name}"
+    out_dir = f"{const.MIX_DATA_DIR}\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{ch}ch_6cm\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{int(reverbe_sec * 10):02}sec_{ch}ch_6cm\\{angle_name}"
     print("out_dir", out_dir)
 
 
@@ -417,12 +417,13 @@ if __name__ == "__main__":
     #     executor.map(process_recoding_thread,
     #                  angle_list,
     #                  angle_name_list,)
-    for reverbe in range(1, 6):
-        with ProcessPoolExecutor() as executor:
-            executor.map(process_recoding_thread,
-                         angle_list,
-                         angle_name_list,
-                         [reverbe*0.1]*len(angle_list))
+    # for reverbe in range(1, 6):
+    reverbe = 5
+    with ProcessPoolExecutor() as executor:
+        executor.map(process_recoding_thread,
+                     angle_list,
+                     angle_name_list,
+                     [reverbe*0.1]*len(angle_list))
 
     # for reverbe in range(1, 6):
     #     speech_type = "subset_DEMAND"
