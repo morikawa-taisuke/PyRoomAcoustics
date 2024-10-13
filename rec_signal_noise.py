@@ -2,6 +2,8 @@ import os.path
 import wave as wave
 import pyroomacoustics as pa
 import numpy as np
+from pyroomacoustics import distance
+from sympy.strategies.branch import condition
 from tqdm import tqdm
 import scipy
 import random
@@ -10,6 +12,7 @@ import torchaudio.transforms as transforms
 import torch
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 import time
+import json
 
 # my_module
 import rec_config as rec_conf
@@ -218,7 +221,7 @@ def recoding(wave_files, out_dir, snr, reverbe_sec, channel=1, is_split=False):
         rec_util.save_wave(result_clean, clean_path)  # 保存
 
 
-def recoding2(wave_files, out_dir, snr, reverbe_sec, reverbe_par, channel=1, is_split=False, angle=np.pi, angle_name:str=None):
+def recoding2(wave_files, out_dir, snr, reverbe_sec, reverbe_par, channel=1, distance=1, is_split=False, angle=np.pi, angle_name:str=None):
     """ シミュレーションを用いた録音 (部屋のパラメータを計算済み)
 
     Args:
@@ -263,7 +266,7 @@ def recoding2(wave_files, out_dir, snr, reverbe_sec, reverbe_par, channel=1, is_
     num_sources = len(wave_data)  # シミュレーションで用いる音源数
     mic_center = room_dim / 2  # アレイマイクの中心[x,y,z](m)
     num_channels = channel  # マイクの個数(チャンネル数)
-    distance = 0.03  # 各マイクの間隔(m)
+    distance = distance * 0.01  # 各マイクの間隔(m)
     mic_coordinate = rec_util.set_mic_coordinate(center=mic_center, num_channels=num_channels, distance=distance)  # 線形アレイの場合
     # mic_coordinate = rec_util.set_circular_mic_coordinate(center=mic_center, num_channels=num_channels, radius=distance)  # 円形アレイの場合
 
@@ -367,12 +370,23 @@ def process_recoding_thread(angle, angle_name, reverbe_sec = 0.5):
     noise_path = f"{const.SAMPLE_DATA_DIR}\\noise\\{noise_type}.wav"  # 雑音信号のディレクトリ
     snr = 10  # SNR
     ch = 4  # マイク数
+    distance = 3    # cm
     is_split = False  # 信号の保存方法 True:各チャンネルごとにファイルを分ける False:1つのファイルにまとめる
-    out_dir = f"{const.MIX_DATA_DIR}\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{ch}ch_3cm\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{int(reverbe_sec * 10):02}sec_{ch}ch_3cm\\{angle_name}"
+    out_dir = f"D:\\morikawa\\sound_data\\mix_data\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{ch}ch_{distance}cm\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{int(reverbe_sec * 10):02}sec_{ch}ch_{distance}cm\\{angle_name}"
     print("out_dir", out_dir)
+    reverbe_par_json = None
+    if reverbe_par_json == None:
+        reverbe_par = serch_reverbe_sec(reverbe_sec=reverbe_sec, channel=ch, angle=angle)  # 任意の残響になるようなパラメータを求める
+        json_data = {"reverbe_par": reverbe_par}
+        reverbe_par_json = os.path.join(f"D:\\morikawa\\sound_data\\mix_data\\reverbe_condition\\{reverbe_sec}_{ch}_{distance}_{angle_name}.json")
+        with open(reverbe_par_json, "w") as json_file:
+            json.dump(json_data, json_file, indent=4)
+    else:
+        with open(reverbe_par_json, "r") as json_file:
+            json_data = json.load(json_file)
+            reverbe_par = json_data["reverbe_par"]
 
 
-    reverbe_par = serch_reverbe_sec(reverbe_sec=reverbe_sec, channel=ch, angle=angle)  # 任意の残響になるようなパラメータを求める
     for sub_dir in sub_dir_list:
         """音声ファイルリストの作成"""
         target_list = my_func.get_wave_filelist(os.path.join(target_dir, sub_dir))
@@ -389,6 +403,7 @@ def process_recoding_thread(angle, angle_name, reverbe_sec = 0.5):
                       reverbe_sec=reverbe_sec,
                       reverbe_par=reverbe_par,
                       channel=ch,
+                      distance = distance,
                       is_split=is_split,
                       angle_name=angle_name)
 
@@ -418,12 +433,13 @@ if __name__ == "__main__":
     #                  angle_list,
     #                  angle_name_list,)
     # for reverbe in range(1, 6):
-    reverbe = 5
-    with ProcessPoolExecutor() as executor:
-        executor.map(process_recoding_thread,
-                     angle_list,
-                     angle_name_list,
-                     [reverbe*0.1]*len(angle_list))
+    # reverbe = 5
+    for reverbe in range(1, 6):
+        with ProcessPoolExecutor() as executor:
+            executor.map(process_recoding_thread,
+                         angle_list,
+                         angle_name_list,
+                         [reverbe*0.1]*len(angle_list))
 
     # for reverbe in range(1, 6):
     #     speech_type = "subset_DEMAND"
