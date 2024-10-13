@@ -390,7 +390,6 @@ def process_recoding_thread(angle, angle_name, reverbe_sec = 0.5):
             json_data = json.load(json_file)
             reverbe_par = json_data["reverbe_par"]
 
-    print("a")
     for sub_dir in sub_dir_list:
         """音声ファイルリストの作成"""
         target_list = my_func.get_wave_filelist(os.path.join(target_dir, sub_dir))
