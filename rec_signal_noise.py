@@ -1,5 +1,7 @@
 import os.path
 import wave as wave
+from os import mkdir
+
 import pyroomacoustics as pa
 import numpy as np
 from pyroomacoustics import distance
@@ -379,6 +381,8 @@ def process_recoding_thread(angle, angle_name, reverbe_sec = 0.5):
         reverbe_par = serch_reverbe_sec(reverbe_sec=reverbe_sec, channel=ch, angle=angle)  # 任意の残響になるようなパラメータを求める
         json_data = {"reverbe_par": reverbe_par}
         reverbe_par_json = os.path.join(f"D:\\morikawa\\sound_data\\mix_data\\reverbe_condition\\{reverbe_sec}_{ch}_{distance}_{angle_name}.json")
+        """ 出力先のディレクトリの確認 """
+        my_func.exists_dir(my_func.get_dirname(reverbe_par_json))
         with open(reverbe_par_json, "w") as json_file:
             json.dump(json_data, json_file, indent=4)
     else:
@@ -386,7 +390,7 @@ def process_recoding_thread(angle, angle_name, reverbe_sec = 0.5):
             json_data = json.load(json_file)
             reverbe_par = json_data["reverbe_par"]
 
-
+    print("a")
     for sub_dir in sub_dir_list:
         """音声ファイルリストの作成"""
         target_list = my_func.get_wave_filelist(os.path.join(target_dir, sub_dir))
