@@ -376,7 +376,7 @@ def process_recoding_thread(angle, angle_name, reverbe_sec = 0.5):
     is_split = False  # 信号の保存方法 True:各チャンネルごとにファイルを分ける False:1つのファイルにまとめる
     out_dir = f"D:\\morikawa\\sound_data\\mix_data\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{ch}ch_{distance}cm\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{int(reverbe_sec * 10):02}sec_{ch}ch_{distance}cm\\{angle_name}"
     print("out_dir", out_dir)
-    reverbe_par_json = None
+    reverbe_par_json = f"D:\\morikawa\\sound_data\\mix_data\\reverbe_condition\\0.5_4_3_{angle_name}.json"
     if reverbe_par_json == None:
         reverbe_par = serch_reverbe_sec(reverbe_sec=reverbe_sec, channel=ch, angle=angle)  # 任意の残響になるようなパラメータを求める
         json_data = {"reverbe_par": reverbe_par}
@@ -386,10 +386,13 @@ def process_recoding_thread(angle, angle_name, reverbe_sec = 0.5):
         with open(reverbe_par_json, "w") as json_file:
             json.dump(json_data, json_file, indent=4)
     else:
+        print("json_path:", reverbe_par_json)
         with open(reverbe_par_json, "r") as json_file:
             json_data = json.load(json_file)
             reverbe_par = json_data["reverbe_par"]
+        # print("b")
 
+    # print("C")
     for sub_dir in sub_dir_list:
         """音声ファイルリストの作成"""
         target_list = my_func.get_wave_filelist(os.path.join(target_dir, sub_dir))
@@ -436,13 +439,13 @@ if __name__ == "__main__":
     #                  angle_list,
     #                  angle_name_list,)
     # for reverbe in range(1, 6):
-    # reverbe = 5
-    for reverbe in range(1, 6):
-        with ProcessPoolExecutor() as executor:
-            executor.map(process_recoding_thread,
-                         angle_list,
-                         angle_name_list,
-                         [reverbe*0.1]*len(angle_list))
+    reverbe = 5
+    # for reverbe in range(1, 6):
+    with ProcessPoolExecutor() as executor:
+        executor.map(process_recoding_thread,
+                     angle_list,
+                     angle_name_list,
+                     [reverbe*0.1]*len(angle_list))
 
     # for reverbe in range(1, 6):
     #     speech_type = "subset_DEMAND"
