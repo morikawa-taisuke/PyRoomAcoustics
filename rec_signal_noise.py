@@ -364,23 +364,22 @@ def recoding2(wave_files, out_dir, snr, reverbe_sec, reverbe_par, channel=1, dis
         # print(f"result_clean.shape:{result_clean.shape}")               # 確認用
         rec_util.save_wave(result_clean, clean_path)  # 保存
 
-def process_recoding_thread(angle, angle_name, reverbe_sec = 0.5):
-    speech_type = "DEMAND"
+def process_recoding_thread(angle, angle_name, reverbe_sec = 5):
+    speech_type = "subset_DEMAND"
     noise_type = "hoth"
     target_dir = f"{const.SAMPLE_DATA_DIR}\\speech\\{speech_type}\\"  # 目的信号のディレクトリ
     sub_dir_list = my_func.get_subdir_list(target_dir)
     noise_path = f"{const.SAMPLE_DATA_DIR}\\noise\\{noise_type}.wav"  # 雑音信号のディレクトリ
     snr = 10  # SNR
     ch = 4  # マイク数
-    distance = 3    # cm
+    distance = 10    # cm
     is_split = False  # 信号の保存方法 True:各チャンネルごとにファイルを分ける False:1つのファイルにまとめる
-    out_dir = f"D:\\morikawa\\sound_data\\mix_data\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{ch}ch_{distance}cm\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{int(reverbe_sec * 10):02}sec_{ch}ch_{distance}cm\\{angle_name}"
+    out_dir = f"{const.MIX_DATA_DIR}\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{ch}ch_{distance}cm\\{angle_name}"
     print("out_dir", out_dir)
-    reverbe_par_json = f"D:\\morikawa\\sound_data\\mix_data\\reverbe_condition\\0.5_4_3_{angle_name}.json"
-    if reverbe_par_json == None:
+    reverbe_par_json = f"{const.MIX_DATA_DIR}\\reverbe_condition\\{reverbe_sec:02}sec_{ch}ch_{distance}cm_{angle_name}.json"
+    if not os.path.isfile(reverbe_par_json):
         reverbe_par = serch_reverbe_sec(reverbe_sec=reverbe_sec, channel=ch, angle=angle)  # 任意の残響になるようなパラメータを求める
         json_data = {"reverbe_par": reverbe_par}
-        reverbe_par_json = os.path.join(f"D:\\morikawa\\sound_data\\mix_data\\reverbe_condition\\{reverbe_sec}_{ch}_{distance}_{angle_name}.json")
         """ 出力先のディレクトリの確認 """
         my_func.exists_dir(my_func.get_dirname(reverbe_par_json))
         with open(reverbe_par_json, "w") as json_file:
@@ -406,7 +405,7 @@ def process_recoding_thread(angle, angle_name, reverbe_sec = 0.5):
             recoding2(wave_files=wave_file,
                       out_dir=os.path.join(out_dir, sub_dir),
                       snr=snr,
-                      reverbe_sec=reverbe_sec,
+                      reverbe_sec=reverbe_sec*0.1,
                       reverbe_par=reverbe_par,
                       channel=ch,
                       distance = distance,
@@ -439,13 +438,13 @@ if __name__ == "__main__":
     #                  angle_list,
     #                  angle_name_list,)
     # for reverbe in range(1, 6):
-    reverbe = 5
-    # for reverbe in range(1, 6):
-    with ProcessPoolExecutor() as executor:
-        executor.map(process_recoding_thread,
-                     angle_list,
-                     angle_name_list,
-                     [reverbe*0.1]*len(angle_list))
+    # reverbe = 5
+    for reverbe in range(1, 6):
+        with ProcessPoolExecutor() as executor:
+            executor.map(process_recoding_thread,
+                         angle_list,
+                         angle_name_list,
+                         [reverbe]*len(angle_list))
 
     # for reverbe in range(1, 6):
     #     speech_type = "subset_DEMAND"
