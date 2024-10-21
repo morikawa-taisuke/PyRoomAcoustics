@@ -463,7 +463,8 @@ if __name__ == "__main__":
     print("out_dir", out_dir)
 
     """録音(シミュレーション)"""
-    reverbe_par_json = f"{const.MIX_DATA_DIR}\\reverbe_condition\\{reverbe:02}sec_{ch}ch_{distance}cm_Left.json"
+    reverbe_par_json = "D:\\morikawa\\sound_data\\mix_data\\reverbe_condition\\0.5_4_3_Left.json"
+    # reverbe_par_json = f"{const.MIX_DATA_DIR}\\reverbe_condition\\{reverbe:02}sec_{ch}ch_{distance}cm_Left.json"
     if not os.path.isfile(reverbe_par_json):
         reverbe_par = serch_reverbe_sec(reverbe_sec=reverbe*0.1, channel=ch)  # 任意の残響になるようなパラメータを求める
         json_data = {"reverbe_par": reverbe_par}
