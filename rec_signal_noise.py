@@ -454,9 +454,10 @@ if __name__ == "__main__":
     target_dir = f"{const.SAMPLE_DATA_DIR}\\speech\\{speech_type}\\"  # 目的信号のディレクトリ
     sub_dir_list = my_func.get_subdir_list(target_dir)
     noise_path = f"{const.SAMPLE_DATA_DIR}\\noise\\{noise_type}.wav"  # 雑音信号のディレクトリ
-    snr = 10  # SNR
-    reverbe = 5  # 残響
-    ch = 4  # マイク数
+    snr = 10  # SNR [dB]
+    reverbe = 5  # 残響 [sec]
+    ch = 4  # マイク数 [ch]
+    distance = 10   # マイクの間隔 [cm]
 
     out_dir = f"{const.MIX_DATA_DIR}\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{ch}ch\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{reverbe:02}sec_{ch}ch\\"
     print("out_dir", out_dir)
