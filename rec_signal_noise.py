@@ -425,7 +425,7 @@ if __name__ == "__main__":
     # ch = 4  # マイク数
     # is_split = False  # 信号の保存方法 True:各チャンネルごとにファイルを分ける False:1つのファイルにまとめる
     angle_list = [np.pi*i/4. for i in range(5)]
-    angle_name_list = ["Right", "FrontRight", "Front", "FrontLeft", "Left"]
+    angle_name_list = ["Right"] #, "FrontRight", "Front", "FrontLeft", "Left"
     print(angle_list)
     # # for channel in channel_list:
     # # for reverbe_sec in reverbe_list:
@@ -456,15 +456,15 @@ if __name__ == "__main__":
     noise_path = f"{const.SAMPLE_DATA_DIR}\\noise\\{noise_type}.wav"  # 雑音信号のディレクトリ
     snr = 10  # SNR [dB]
     reverbe = 5  # 残響 [sec]
-    ch = 4  # マイク数 [ch]
+    ch = 1  # マイク数 [ch]
     distance = 10   # マイクの間隔 [cm]
 
     out_dir = f"{const.MIX_DATA_DIR}\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{ch}ch\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{reverbe:02}sec_{ch}ch\\"
     print("out_dir", out_dir)
 
     """録音(シミュレーション)"""
-    reverbe_par_json = "D:\\morikawa\\sound_data\\mix_data\\reverbe_condition\\0.5_4_3_Left.json"
-    # reverbe_par_json = f"{const.MIX_DATA_DIR}\\reverbe_condition\\{reverbe:02}sec_{ch}ch_{distance}cm_Left.json"
+    # reverbe_par_json = "D:\\morikawa\\sound_data\\mix_data\\reverbe_condition\\0.5_4_3_Left.json"
+    reverbe_par_json = f"{const.MIX_DATA_DIR}\\reverbe_condition\\{reverbe:02}sec_{ch}ch_{distance}cm_Front.json"
     if not os.path.isfile(reverbe_par_json):
         reverbe_par = serch_reverbe_sec(reverbe_sec=reverbe*0.1, channel=ch)  # 任意の残響になるようなパラメータを求める
         json_data = {"reverbe_par": reverbe_par}
