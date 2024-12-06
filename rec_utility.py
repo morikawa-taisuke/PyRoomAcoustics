@@ -202,9 +202,9 @@ def get_scale_noise(signal_data, noise_data, snr):
 
     scale_noise_data = alpha * noise_data  # 雑音信号の大きさを調整
     after_snr = round(get_snr(signal_pawer, get_wave_power(scale_noise_data)))
-    # print(f"snr:{type(snr)}")
+    # print(f"snr:{snr}")
     # print(f"befor_snr:{get_snr(signal_pawer,noise_pawer)}")
-    # print(f"after_snr:{type(after_snr)}")
+    # print(f"after_snr:{after_snr}")
 
     if after_snr != snr:
         print(f"not:{after_snr},{snr}")
