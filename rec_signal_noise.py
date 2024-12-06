@@ -5,6 +5,7 @@ from os import mkdir
 import pyroomacoustics as pa
 import numpy as np
 from pyroomacoustics import distance
+from requests.packages import target
 from sympy.strategies.branch import condition
 from tqdm import tqdm
 import scipy
@@ -247,6 +248,8 @@ def recoding2(wave_files, out_dir, snr, reverbe_sec, reverbe_par, channel=1, dis
 
     """ 音源の読み込み """
     target_data = rec_util.load_wave_data(wave_files[0])
+    max_data = np.max(target_data)
+
     noise_data = rec_util.load_wave_data(wave_files[1])
     # print(f"target_data.shape:{target_data.shape}")     # 確認用
     # print(f"noise_data.shape:{noise_data.shape}")       # 確認用
@@ -313,6 +316,12 @@ def recoding2(wave_files, out_dir, snr, reverbe_sec, reverbe_par, channel=1, dis
     result_reverbe = room_reverbe.mic_array.signals
     result_noise = room_noise.mic_array.signals
     result_clean = room_clean.mic_array.signals
+
+    """ 録音データのスケーリング そのまま出力するとオトワレする場合があるので """
+    result_mix = result_mix * (max_data / np.max(result_mix))
+    result_reverbe = result_reverbe * (max_data / np.max(result_reverbe))
+    result_noise = result_noise * (max_data / np.max(result_noise))
+    result_clean = result_clean * (max_data / np.max(result_clean))
 
     """ 残響時間の確認 """
     # rt60 = room_mix.measure_rt60()
