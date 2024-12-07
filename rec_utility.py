@@ -144,16 +144,22 @@ def save_wave(signal, file_name, sample_rate=rec_conf.sampling_rate):
     my_func.exists_dir(my_func.get_dirname(file_name))
     """ 2バイトのデータに変換 """
     signal = signal.astype(np.int16)
-    """ 出力ファイルを書き込み専用で開く """
-    wave_out = wave.open(file_name, "w")
-    """ 出力の設定 """
-    wave_out.setnchannels(1)  # モノラル:1、ステレオ:2
-    wave_out.setsampwidth(2)  # サンプルサイズ2byte
-    wave_out.setframerate(sample_rate)  # サンプリング周波数
-    """ データを書き込み """
-    wave_out.writeframes(signal)
-    """ ファイルを閉じる """
-    wave_out.close()
+    # """ 出力ファイルを書き込み専用で開く """
+    # wave_out = wave.open(file_name, "w")
+    # """ 出力の設定 """
+    # wave_out.setnchannels(1)  # モノラル:1、ステレオ:2
+    # wave_out.setsampwidth(2)  # サンプルサイズ2byte
+    # wave_out.setframerate(sample_rate)  # サンプリング周波数
+    # """ データを書き込み """
+    # wave_out.writeframes(signal)
+    # """ ファイルを閉じる """
+    # wave_out.close()
+    with wave.open(file_name,"w") as wave_out:
+        wave_out.setnchannels(1)  # モノラル:1、ステレオ:2
+        wave_out.setsampwidth(2)  # サンプルサイズ2byte
+        wave_out.setframerate(sample_rate)  # サンプリング周波数
+        """ データを書き込み """
+        wave_out.writeframes(signal)
 
 
 def get_wave_power(wave_data):
