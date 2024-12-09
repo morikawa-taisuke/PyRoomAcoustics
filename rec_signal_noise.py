@@ -1,12 +1,8 @@
 import os.path
-import wave as wave
-from os import mkdir
 
 import pyroomacoustics as pa
 import numpy as np
 from pyroomacoustics import distance
-from requests.packages import target
-from sympy.strategies.branch import condition
 from tqdm import tqdm
 import scipy
 import random
