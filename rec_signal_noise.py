@@ -349,23 +349,23 @@ def recoding2(wave_files, out_dir, snr, reverbe_sec, reverbe_par, channel=1, dis
         """ チャンネルをまとめて保存 """
         """ noise_reverberation """
         mix_path = f"{out_dir}/noise_reverbe/{signal_name}_{noise_name}_{snr}db_{int(reverbe_sec*10):02}sec_{angle_name}.wav"
-        result_mix = result_mix * np.iinfo(np.int16).max / 20  # スケーリング
+        result_mix = result_mix * np.iinfo(np.int16).max / np.max(result_mix)  # スケーリング
         # print(f"result_mix.shape:{result_mix.shape}")
         rec_util.save_wave(result_mix, mix_path)  # 保存
         """ reverberation_only """
         reverbe_path = f"{out_dir}/reverbe_only/{signal_name}_{int(reverbe_sec*10):02}sec_{angle_name}.wav"
-        result_reverbe = result_reverbe * np.iinfo(np.int16).max / 20  # 全てのチャンネルを保存
+        result_reverbe = result_reverbe * np.iinfo(np.int16).max / np.max(result_reverbe)  # 全てのチャンネルを保存
         # print(f"result_reverbe.shape:{result_reverbe.shape}")               # 確認用
         rec_util.save_wave(result_reverbe, reverbe_path)  # 保存
         """ nosie_only """
         noise_path = f"{out_dir}/noise_only/{signal_name}_{noise_name}_{snr}db_{angle_name}.wav"
-        result_noise = result_noise * np.iinfo(np.int16).max / 20  # 全てのチャンネルを保存
+        result_noise = result_noise * np.iinfo(np.int16).max / np.max(result_noise)  # 全てのチャンネルを保存
         # print(f"result_nosie.shape:{result_noise.shape}")               # 確認用
         rec_util.save_wave(result_noise, noise_path)  # 保存
         """ clean """
         clean_path = f"{out_dir}/clean/{signal_name}_{noise_name}_{snr}db_{int(reverbe_sec*10):02}sec_{angle_name}.wav"
         # clean_path = f"{out_dir}/clean/{signal_name}.wav"
-        result_clean = result_clean * np.iinfo(np.int16).max / 20  # 全てのチャンネルを保存
+        result_clean = result_clean * np.iinfo(np.int16).max / np.max(result_clean)  # 全てのチャンネルを保存
         # print(f"result_clean.shape:{result_clean.shape}")               # 確認用
         rec_util.save_wave(result_clean, clean_path)  # 保存
 
