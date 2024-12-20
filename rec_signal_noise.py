@@ -220,7 +220,7 @@ def recoding(wave_files, out_dir, snr, reverbe_sec, channel=1, is_split=False):
         rec_util.save_wave(result_clean, clean_path)  # 保存
 
 
-def recoding2(wave_files, out_dir, snr, reverbe_sec, reverbe_par, channel=1, distance=1, is_split=False, angle=np.pi, angle_name:str="Left"):
+def recoding2(wave_files, out_dir, snr, reverbe_sec, reverbe_par, channel=1, distance=1, is_split=False, angle=np.pi, angle_name:str="None"):
     """ シミュレーションを用いた録音 (部屋のパラメータを計算済み)
 
     Args:
@@ -244,11 +244,11 @@ def recoding2(wave_files, out_dir, snr, reverbe_sec, reverbe_par, channel=1, dis
 
     """ 音源の読み込み """
     target_data = rec_util.load_wave_data(wave_files[0])
-    max_data = np.max(target_data)
-
     noise_data = rec_util.load_wave_data(wave_files[1])
     # print(f"target_data.shape:{target_data.shape}")     # 確認用
     # print(f"noise_data.shape:{noise_data.shape}")       # 確認用
+    max_data = np.iinfo(np.int16).max
+
 
     """ 雑音データをランダムに切り出す """
     start = random.randint(0, len(noise_data) - len(target_data))  # スタート位置をランダムに決定
@@ -278,10 +278,10 @@ def recoding2(wave_files, out_dir, snr, reverbe_sec, reverbe_par, channel=1, dis
     distance = [0.5, 0.7]  # 音源とマイクの距離(m)
 
     """ 部屋の生成 """
-    room_mix = pa.ShoeBox(room_dim, fs=sample_rate, max_order=reverbe_par[1], absorption=reverbe_par[0])
-    room_reverbe = pa.ShoeBox(room_dim, fs=sample_rate, max_order=reverbe_par[1], absorption=reverbe_par[0])
-    room_noise = pa.ShoeBox(room_dim, fs=sample_rate, max_order=0, absorption=1.0)
-    room_clean = pa.ShoeBox(room_dim, fs=sample_rate, max_order=0, absorption=1.0)
+    room_mix = pa.ShoeBox(room_dim, fs=sample_rate, max_order=reverbe_par[1], absorption=reverbe_par[0])    # 雑音 + 残響
+    room_reverbe = pa.ShoeBox(room_dim, fs=sample_rate, max_order=reverbe_par[1], absorption=reverbe_par[0])    # 残響のみ
+    room_noise = pa.ShoeBox(room_dim, fs=sample_rate, max_order=0, absorption=1.0)  # 雑音のみ
+    room_clean = pa.ShoeBox(room_dim, fs=sample_rate, max_order=0, absorption=1.0)  # 教師信号
 
     """ 部屋にマイクを設置 """
     room_mix.add_microphone_array(pa.MicrophoneArray(mic_coordinate, fs=room_mix.fs))
@@ -297,7 +297,7 @@ def recoding2(wave_files, out_dir, snr, reverbe_sec, reverbe_par, channel=1, dis
         wave_data[idx] /= np.std(wave_data[idx])
         room_mix.add_source(source_coordinate[:, idx], signal=wave_data[idx])
         room_noise.add_source(source_coordinate[:, idx], signal=wave_data[idx])
-        if idx == 0:
+        if idx == 0:    # 目的信号のみ追加する
             room_reverbe.add_source(source_coordinate[:, idx], signal=wave_data[idx])
             room_clean.add_source(source_coordinate[:, idx], signal=wave_data[idx])
 
@@ -314,10 +314,17 @@ def recoding2(wave_files, out_dir, snr, reverbe_sec, reverbe_par, channel=1, dis
     result_clean = room_clean.mic_array.signals
 
     """ 録音データのスケーリング そのまま出力するとオトワレする場合があるので """
-    # result_mix = result_mix * (max_data / np.max(result_mix))
-    # result_reverbe = result_reverbe * (max_data / np.max(result_reverbe))
-    # result_noise = result_noise * (max_data / np.max(result_noise))
-    # result_clean = result_clean * (max_data / np.max(result_clean))
+    max_result_data = max(np.max(np.abs(result_mix)), np.max(np.abs(result_reverbe)), np.max(np.abs(result_noise)), np.max(np.abs(result_clean)))   # 最大値の取得
+    result_mix = result_mix / max_result_data * max_data
+    result_reverbe = result_reverbe / max_result_data * max_data
+    result_noise = result_noise / max_result_data * max_data
+    result_clean = result_clean / max_result_data * max_data
+
+    """ 正規化の確認 """
+    # print("mix: ", np.max(np.abs(result_mix)))
+    # print("reverbe: ", np.max(np.abs(result_reverbe)))
+    # print("noise: ", np.max(np.abs(result_noise)))
+    # print("clean: ", np.max(np.abs(result_clean)))
 
     """ 残響時間の確認 """
     # rt60 = room_mix.measure_rt60()
@@ -335,37 +342,32 @@ def recoding2(wave_files, out_dir, snr, reverbe_sec, reverbe_par, channel=1, dis
         for i in range(num_channels):
             """ noise_reverberation """
             mix_path = f"{out_dir}/split/noise_reverbe_split/{i + 1:02}ch/{i + 1:02}ch_{signal_name}_{noise_name}_{snr}db_{int(reverbe_sec*10):02}sec.wav"
-            rec_util.save_wave(result_mix[i, :] * np.iinfo(np.int16).max / 15, mix_path, sample_rate)
+            rec_util.save_wave(result_mix[i, :], mix_path, sample_rate)
             """ reverberation_only """
             reverbe_path = f"{out_dir}/split/reverbe_only_split/{i + 1:02}ch/{i + 1:02}ch_{signal_name}_{int(reverbe_sec*10):02}sec.wav"
-            rec_util.save_wave(result_reverbe[i, :] * np.iinfo(np.int16).max / 15, reverbe_path, sample_rate)
+            rec_util.save_wave(result_reverbe[i, :], reverbe_path, sample_rate)
             """ noise_only """
             noise_path = f"{out_dir}/split/noise_only_split/{i + 1:02}ch/{i + 1:02}ch_{signal_name}_{noise_name}_{snr}db.wav"
-            rec_util.save_wave(result_noise[i, :] * np.iinfo(np.int16).max / 15, noise_path, sample_rate)
+            rec_util.save_wave(result_noise[i, :], noise_path, sample_rate)
             """ clean """
             clean_path = f"{out_dir}/split/clean_split/{i + 1:02}ch/{i + 1:02}ch_{signal_name}.wav"
-            rec_util.save_wave(result_clean[i, :] * np.iinfo(np.int16).max / 15, clean_path, sample_rate)
+            rec_util.save_wave(result_clean[i, :], clean_path, sample_rate)
     else:
         """ チャンネルをまとめて保存 """
         """ noise_reverberation """
         mix_path = f"{out_dir}/noise_reverbe/{signal_name}_{noise_name}_{snr}db_{int(reverbe_sec*10):02}sec_{angle_name}.wav"
-        result_mix = result_mix * np.iinfo(np.int16).max / 20  # スケーリング
         # print(f"result_mix.shape:{result_mix.shape}")
         rec_util.save_wave(result_mix, mix_path)  # 保存
         """ reverberation_only """
         reverbe_path = f"{out_dir}/reverbe_only/{signal_name}_{int(reverbe_sec*10):02}sec_{angle_name}.wav"
-        result_reverbe = result_reverbe * np.iinfo(np.int16).max / 20  # 全てのチャンネルを保存
         # print(f"result_reverbe.shape:{result_reverbe.shape}")               # 確認用
         rec_util.save_wave(result_reverbe, reverbe_path)  # 保存
         """ nosie_only """
         noise_path = f"{out_dir}/noise_only/{signal_name}_{noise_name}_{snr}db_{angle_name}.wav"
-        result_noise = result_noise * np.iinfo(np.int16).max / 20  # 全てのチャンネルを保存
         # print(f"result_nosie.shape:{result_noise.shape}")               # 確認用
         rec_util.save_wave(result_noise, noise_path)  # 保存
         """ clean """
         clean_path = f"{out_dir}/clean/{signal_name}_{noise_name}_{snr}db_{int(reverbe_sec*10):02}sec_{angle_name}.wav"
-        # clean_path = f"{out_dir}/clean/{signal_name}.wav"
-        result_clean = result_clean * np.iinfo(np.int16).max / 20  # 全てのチャンネルを保存
         # print(f"result_clean.shape:{result_clean.shape}")               # 確認用
         rec_util.save_wave(result_clean, clean_path)  # 保存
 
@@ -464,7 +466,7 @@ if __name__ == "__main__":
     ch = 1  # マイク数 [ch]
     distance = 10   # マイクの間隔 [cm]
     for reverbe in range(1, 5+1):
-        out_dir = f"{const.MIX_DATA_DIR}\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{ch}ch\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{reverbe:02}sec_{ch}ch_AAA\\"
+        out_dir = f"{const.MIX_DATA_DIR}\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{ch}ch\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{reverbe:02}sec_{ch}ch\\"
         print("out_dir", out_dir)
 
         """録音(シミュレーション)"""
