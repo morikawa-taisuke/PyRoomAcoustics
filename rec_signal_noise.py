@@ -418,24 +418,15 @@ def process_recoding_thread(angle, angle_name, reverbe_sec = 5):
                       reverbe_sec=reverbe_sec*0.1,
                       reverbe_par=reverbe_par,
                       channel=ch,
-                      distance = distance,
+                      distance=distance,
                       is_split=is_split,
                       angle_name=angle_name)
 
 if __name__ == "__main__":
     print("main")
     """ シミュレーションの設定"""
-    # speech_type = "subset_DEMAND"
-    # noise_type = "hoth"
-    # target_dir = f"{const.SAMPLE_DATA_DIR}\\speech\\{speech_type}\\"  # 目的信号のディレクトリ
-    # sub_dir_list = my_func.get_subdir_list(target_dir)
-    # noise_path = f"{const.SAMPLE_DATA_DIR}\\noise\\{noise_type}.wav"  # 雑音信号のディレクトリ
-    # snr = 10  # SNR
-    # reverbe = 5  # 残響
-    # ch = 4  # マイク数
-    # is_split = False  # 信号の保存方法 True:各チャンネルごとにファイルを分ける False:1つのファイルにまとめる
     angle_list = [np.pi*i/4. for i in range(5)]
-    angle_name_list = ["Right"] #, "FrontRight", "Front", "FrontLeft", "Left"
+    angle_name_list = ["Right", "FrontRight", "Front", "FrontLeft", "Left"] # "Right", "FrontRight", "Front", "FrontLeft", "Left"
     print(angle_list)
     # # for channel in channel_list:
     # # for reverbe_sec in reverbe_list:
@@ -466,45 +457,47 @@ if __name__ == "__main__":
     noise_path = f"{const.SAMPLE_DATA_DIR}\\noise\\{noise_type}.wav"  # 雑音信号のディレクトリ
     snr = 10  # SNR [dB]
     # reverbe = 5  # 残響 [sec]
-    ch = 1  # マイク数 [ch]
+    ch = 4  # マイク数 [ch]
     distance = 10   # マイクの間隔 [cm]
     for reverbe in range(1, 5+1):
-        out_dir = f"{const.MIX_DATA_DIR}\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{ch}ch\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{reverbe:02}sec_{ch}ch\\"
-        print("out_dir", out_dir)
+        for angle, angle_name in zip(angle_list, angle_name_list):
+            out_dir = f"{const.MIX_DATA_DIR}\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{ch}ch\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{reverbe:02}sec_{ch}ch\\"
+            print("out_dir", out_dir)
 
-        """録音(シミュレーション)"""
-        # reverbe_par_json = "D:\\morikawa\\sound_data\\mix_data\\reverbe_condition\\0.5_4_3_Left.json"
-        reverbe_par_json = f"{const.MIX_DATA_DIR}\\reverbe_condition\\{reverbe:02}sec_{ch}ch_{distance}cm_Front.json"
-        if not os.path.isfile(reverbe_par_json):
-            reverbe_par = serch_reverbe_sec(reverbe_sec=reverbe*0.1, channel=ch)  # 任意の残響になるようなパラメータを求める
-            json_data = {"reverbe_par": reverbe_par}
-            """ 出力先のディレクトリの確認 """
-            my_func.exists_dir(my_func.get_dirname(reverbe_par_json))
-            with open(reverbe_par_json, "w") as json_file:
-                json.dump(json_data, json_file, indent=4)
-        else:
-            print("json_path:", reverbe_par_json)
-            with open(reverbe_par_json, "r") as json_file:
-                json_data = json.load(json_file)
-                reverbe_par = json_data["reverbe_par"]
-            # print("b")
+            """録音(シミュレーション)"""
+            reverbe_par_json = f"{const.MIX_DATA_DIR}\\reverbe_condition\\{reverbe:02}sec_{ch}ch_{distance}cm_Front.json"
+            if not os.path.isfile(reverbe_par_json):
+                reverbe_par = serch_reverbe_sec(reverbe_sec=reverbe*0.1, channel=ch)  # 任意の残響になるようなパラメータを求める
+                json_data = {"reverbe_par": reverbe_par}
+                """ 出力先のディレクトリの確認 """
+                my_func.exists_dir(my_func.get_dirname(reverbe_par_json))
+                with open(reverbe_par_json, "w") as json_file:
+                    json.dump(json_data, json_file, indent=4)
+            else:
+                print("json_path:", reverbe_par_json)
+                with open(reverbe_par_json, "r") as json_file:
+                    json_data = json.load(json_file)
+                    reverbe_par = json_data["reverbe_par"]
+                # print("b")
 
-        for sub_dir in sub_dir_list:
-            """音声ファイルリストの作成"""
-            target_list = my_func.get_wave_filelist(os.path.join(target_dir, sub_dir))
-            print(f"len:{len(target_list)}")
-            for target_file in tqdm(target_list):
-                wave_file = []
-                wave_file.append(target_file)
-                wave_file.append(noise_path)
+            for sub_dir in sub_dir_list:
+                """音声ファイルリストの作成"""
+                target_list = my_func.get_wave_filelist(os.path.join(target_dir, sub_dir))
+                print(f"len:{len(target_list)}")
+                for target_file in tqdm(target_list):
+                    wave_file = []
+                    wave_file.append(target_file)
+                    wave_file.append(noise_path)
 
-                """録音(シミュレーション)"""
-                recoding2(wave_files=wave_file,
-                          out_dir=os.path.join(out_dir, sub_dir),
-                          snr=snr,
-                          reverbe_sec=reverbe*0.1,
-                          reverbe_par=reverbe_par,
-                          channel=ch)
+                    """録音(シミュレーション)"""
+                    recoding2(wave_files=wave_file,
+                              out_dir=os.path.join(out_dir, sub_dir),
+                              snr=snr,
+                              reverbe_sec=reverbe*0.1,
+                              reverbe_par=reverbe_par,
+                              channel=ch,
+                              angle=angle,
+                              angle_name=angle_name)
 
     end = time.time()
     print(f"time:{(end-start)/60:.2f}min")
