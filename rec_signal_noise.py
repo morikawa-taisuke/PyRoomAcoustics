@@ -10,6 +10,7 @@ import torchaudio
 import torchaudio.transforms as transforms
 import torch
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
+import math
 import time
 import json
 
@@ -94,15 +95,15 @@ def recoding(wave_files, out_dir, snr, reverbe_sec, channel=1, is_split=False):
     """ 音源の読み込み """
     target_data = rec_util.load_wave_data(wave_files[0])
     noise_data = rec_util.load_wave_data(wave_files[1])
-    # print(f"target_data.shape:{target_data.shape}")     # 確認用
-    # print(f"noise_data.shape:{noise_data.shape}")       # 確認用
+    # print(f"target_data.shape:{target_data.shape}")   # 確認用
+    # print(f"noise_data.shape:{noise_data.shape}") # 確認用
 
     """ 雑音データをランダムに切り出す """
     start = random.randint(0, len(noise_data) - len(target_data))  # スタート位置をランダムに決定
     noise_data = noise_data[start: start + len(target_data)]  # noise_dataを切り出す
     scale_nosie = rec_util.get_scale_noise(target_data, noise_data, snr)  # noise_dataの大きさを調節
     # print(f"len(target_data):{len(target_data)}")   # 確認用
-    # print(f"len(noise_data):{len(noise_data)}") # 確認用
+    # print(f"len(noise_data):{len(noise_data)}")   # 確認用
     # print(f"len(scale_nosie):{len(scale_nosie)}")   # 確認用
 
     wave_data = []  # 1つの配列に格納
@@ -374,7 +375,7 @@ def recoding2(wave_files, out_dir, snr, reverbe_sec, reverbe_par, channel=1, dis
         # print(f"result_clean.shape:{result_clean.shape}")               # 確認用
         rec_util.save_wave(result_clean, clean_path)  # 保存
 
-def process_recoding_thread(angle, angle_name, reverbe_sec=5):
+def process_recoding_thread(angle, angle_name, reverbe_sec = 5):
     speech_type = "DEMAND"
     noise_type = "hoth"
     target_dir = f"{const.SAMPLE_DATA_DIR}\\speech\\{speech_type}\\"  # 目的信号のディレクトリ
@@ -406,7 +407,7 @@ def process_recoding_thread(angle, angle_name, reverbe_sec=5):
     # print("C")
     for sub_dir in sub_dir_list:
         """音声ファイルリストの作成"""
-        target_list = my_func.get_wave_filelist(os.path.join(target_dir, sub_dir))
+        target_list = my_func.get_wave_filelist(os.path.join(target_dir, sub_dir, "clean"))
         print(f"len:{len(target_list)}")
         for target_file in tqdm(target_list):
             wave_file = []
@@ -427,8 +428,10 @@ def process_recoding_thread(angle, angle_name, reverbe_sec=5):
 if __name__ == "__main__":
     print("main")
     """ シミュレーションの設定"""
-    angle_list = [np.pi*i/4. for i in range(5)]
-    angle_name_list = ["Right", "FrontRight", "Front", "FrontLeft", "Left"] # "Right", "FrontRight", "Front", "FrontLeft", "Left"
+    # angle_list = [np.pi*i/4. for i in range(5)]
+    # angle_name_list = ["Right", "FrontRight", "Front", "FrontLeft", "Left"] # "Right", "FrontRight", "Front", "FrontLeft", "Left"
+    angle_list = [math.radians(i) for i in [0, 30, 45, 60, 90]]
+    angle_name_list = ["00dig", "30dig", "45dig", "60dig", "90dig"] # "Right", "FrontRight", "Front", "FrontLeft", "Left"
     print(angle_list)
     # # for channel in channel_list:
     # # for reverbe_sec in reverbe_list:
@@ -457,16 +460,19 @@ if __name__ == "__main__":
     sub_dir_list = my_func.get_subdir_list(target_dir)
     noise_path = f"{const.SAMPLE_DATA_DIR}\\noise\\{noise_type}.wav"  # 雑音信号のディレクトリ
     snr = 10  # SNR [dB]
-    reverbe = 5  # 残響 [sec]
-    ch = 1  # マイク数 [ch]
-    distance = 0   # マイクの間隔 [cm]
+    # reverbe = 5  # 残響 [sec]
+    ch = 4  # マイク数 [ch]
+    distance = 10   # マイクの間隔 [cm]
     # for reverbe in range(1, 5+1):
-    # for angle, angle_name in zip(angle_list, angle_name_list):
+    #     for angle, angle_name in zip(angle_list, angle_name_list):
+    reverbe = 5
+    angle_name = "00dig"
+    angle = math.radians(0)
     out_dir = f"{const.MIX_DATA_DIR}\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{ch}ch\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{reverbe:02}sec_{ch}ch\\"
     print("out_dir", out_dir)
 
     """録音(シミュレーション)"""
-    reverbe_par_json = f"{const.MIX_DATA_DIR}\\reverbe_condition\\{reverbe:02}sec_{ch}ch.json"
+    reverbe_par_json = f"{const.MIX_DATA_DIR}\\reverbe_condition\\{reverbe:02}sec_{ch}ch_{distance}cm_Front.json"
     if not os.path.isfile(reverbe_par_json):
         reverbe_par = serch_reverbe_sec(reverbe_sec=reverbe*0.1, channel=ch)  # 任意の残響になるようなパラメータを求める
         json_data = {"reverbe_par": reverbe_par}
@@ -482,8 +488,6 @@ if __name__ == "__main__":
         # print("b")
 
     for sub_dir in sub_dir_list:
-        if sub_dir == "test":
-            continue
         """音声ファイルリストの作成"""
         target_list = my_func.get_wave_filelist(os.path.join(target_dir, sub_dir))
         print(f"len:{len(target_list)}")
@@ -498,7 +502,9 @@ if __name__ == "__main__":
                       snr=snr,
                       reverbe_sec=reverbe*0.1,
                       reverbe_par=reverbe_par,
-                      channel=ch)
-
+                      channel=ch,
+                      angle=angle,
+                      angle_name=angle_name)
+            
     end = time.time()
     print(f"time:{(end-start)/60:.2f}min")
