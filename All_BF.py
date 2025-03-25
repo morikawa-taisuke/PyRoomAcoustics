@@ -10,6 +10,7 @@ import rec_config as rec_conf
 import rec_utility as rec_util
 from mymodule import my_func
 
+
 def serch_reverbe_sec(reverbe_sec, channel):
     reverbe = reverbe_sec
     cnt = 0

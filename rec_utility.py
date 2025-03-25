@@ -1,7 +1,5 @@
 import wave as wave
-import pyroomacoustics as pa
 import numpy as np
-import scipy
 import os
 import itertools
 import math

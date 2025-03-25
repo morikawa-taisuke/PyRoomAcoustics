@@ -1,17 +1,12 @@
-import wave as wave
 import pyroomacoustics as pa
 import numpy as np
-import tqdm
-import scipy
 import random
-import torchaudio
-import torchaudio.transforms as transforms
-import torch
 
 #my_module
 import rec_config as rec_conf
 import rec_utility as rec_util
 from mymodule import my_func
+
 
 def serch_reverbe_sec(reverbe_sec, channel=1):
     reverbe = reverbe_sec

@@ -2,14 +2,9 @@ import os.path
 
 import pyroomacoustics as pa
 import numpy as np
-from pyroomacoustics import distance
 from tqdm import tqdm
 # import scipy
 import random
-import torchaudio
-import torchaudio.transforms as transforms
-import torch
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 import math
 import time
 import json
@@ -17,7 +12,8 @@ import json
 # my_module
 import rec_config as rec_conf
 import rec_utility as rec_util
-from mymodule import my_func, const
+from mymodule import const
+from mymodule import my_func
 
 import os
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"

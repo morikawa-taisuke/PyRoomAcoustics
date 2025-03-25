@@ -1,11 +1,8 @@
 import matplotlib.pyplot as plt
-import pyroomacoustics as pa
 import numpy as np
 
 # my_module
-import rec_config as rec_conf
 import rec_utility as rec_util
-from mymodule import my_func
 
 
 def set_circular_mic_coordinate(center, num_channels, radius):
