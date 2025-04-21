@@ -6,7 +6,7 @@ import math
 import random
 
 from mymodule import my_func
-import rec_config as rec_conf
+from mymodule import rec_config as rec_conf
 
 
 def set_mic_coordinate(center, num_channels, distance):

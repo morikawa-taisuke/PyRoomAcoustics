@@ -10,9 +10,7 @@ import time
 import json
 
 # my_module
-import rec_config as rec_conf
-import rec_utility as rec_util
-from mymodule import const
+from mymodule import const, rec_config as rec_conf, rec_utility as rec_util
 from mymodule import my_func
 
 import os

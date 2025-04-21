@@ -3,9 +3,7 @@ import numpy as np
 import random
 
 #my_module
-import rec_config as rec_conf
-import rec_utility as rec_util
-from mymodule import my_func
+from mymodule import my_func, rec_config as rec_conf, rec_utility as rec_util
 
 
 def serch_reverbe_sec(reverbe_sec, channel=1):

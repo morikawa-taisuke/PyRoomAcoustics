@@ -11,7 +11,7 @@ print(wav_path)
 print(len(wav_list))
 
 snr = [random.uniform(0.0, 10.0) for _ in range(len(wav_list))]
-reverbe = [random.uniform(0.1, 1.0) for _ in range(len(wav_list))]
+reverbe = [random.uniform(10.0, 100.0) for _ in range(len(wav_list))]
 angle = [random.uniform(0.0, 90.0) for _ in range(len(wav_list))]
 # mic = [random.shuffle([0, 1, 2, 3]) for _ in range(len(wav_list))]
 
@@ -22,7 +22,7 @@ angle = [random.uniform(0.0, 90.0) for _ in range(len(wav_list))]
 
 # CSV ファイルに保存
 csv_file = os.path.join(const.SOUND_DATA_DIR, "sample_data", "speech", "DEMAND", "clean", "condition", "train",
-                        "condition_5.csv")
+                        "condition_1.csv")
 with open(csv_file, mode='w', newline='', encoding='utf-8') as file:
     writer = csv.writer(file)
     # ヘッダーの書き込み
@@ -30,6 +30,6 @@ with open(csv_file, mode='w', newline='', encoding='utf-8') as file:
 
     # 各行のデータを書き込み
     for i in range(len(wav_list)):
-        writer.writerow([wav_list[i], round(snr[i], 1), round(reverbe[i], 1), round(angle[i], 0)])
+        writer.writerow([wav_list[i], round(snr[i], 1), int(round(reverbe[i], 0)), round(angle[i], 1)])
 
 print(f"CSV file saved to {csv_file}")

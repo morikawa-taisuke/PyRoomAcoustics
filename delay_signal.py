@@ -2,9 +2,7 @@ import wave as wave
 import numpy as np
 
 # my_module
-import rec_config as rec_conf
-import rec_utility as rec_util
-from mymodule import my_func
+from mymodule import my_func, rec_config as rec_conf, rec_utility as rec_util
 
 
 def search_sample(wave_list):
