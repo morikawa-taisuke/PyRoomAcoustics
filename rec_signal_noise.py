@@ -463,7 +463,7 @@ if __name__ == "__main__":
     for angle, angle_name in zip(angle_list, angle_name_list):
         reverbe = 5
         # angle_name = "00dig"
-        angle = math.radians(0)
+        angle = math.radians(angle)
         out_dir = f"{const.MIX_DATA_DIR}\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{reverbe:02}sec_{ch}ch_{distance}cm\\{angle_name}"
         print("out_dir", out_dir)
 

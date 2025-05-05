@@ -6,6 +6,7 @@ import random
 import numpy as np
 import pyroomacoustics as pa
 from tqdm import tqdm
+import time
 
 # my_module
 from mymodule import const, rec_config as rec_conf, rec_utility as rec_util
@@ -424,34 +425,35 @@ def process_recoding_thread(angle, angle_name, reverbe_sec=5):
 
 if __name__ == "__main__":
     print("main")
-    ch = 4
+    start = time.time()
+    ch = 1
     distance = 6
 
-    for count in range(1, 5+1):
-        csv_path = f"{const.SAMPLE_DATA_DIR}\\speech\\DEMAND\\clean\\condition\\train\\condition_{count}.csv"
-        with open(csv_path) as csv_file:
-            reader = csv.DictReader(csv_file, delimiter=",")
-            total_rows = sum(1 for _ in open(csv_path)) - 1  # ヘッダーを除く行数
-
-            # print("path, snr, reverbe, angle")
-            for row in tqdm(reader, total=total_rows):
-                reverbe = int(row["reverbe"])
-                print("reverbe: ", reverbe * 0.01)
-
-                reverbe_par_json = f"{const.MIX_DATA_DIR}\\reverbe_condition\\{reverbe:03}sec_{ch}ch_{distance}cm.json"
-                if not os.path.isfile(reverbe_par_json):
-                    """録音(シミュレーション)"""
-                    reverbe_par = serch_reverbe_sec(reverbe_sec=reverbe * 0.01, channel=ch)  # 任意の残響になるようなパラメータを求める
-                    json_data = {"reverbe_par": reverbe_par}
-                    """ 出力先のディレクトリの確認 """
-                    my_func.exists_dir(my_func.get_dirname(reverbe_par_json))
-                    with open(reverbe_par_json, "w") as json_file:
-                        json.dump(json_data, json_file, indent=4)
-                # else:
-                #     print("json_path:", reverbe_par_json)
-                #     with open(reverbe_par_json, "r") as json_file:
-                #         json_data = json.load(json_file)
-                #         reverbe_par = json_data["reverbe_par"]
+    # for count in range(1, 5+1):
+    #     csv_path = f"{const.SAMPLE_DATA_DIR}\\speech\\DEMAND\\clean\\condition\\train\\condition_{count}.csv"   # 実験の条件を記したcsvファイル
+    #     with open(csv_path) as csv_file:
+    #         reader = csv.DictReader(csv_file, delimiter=",")
+    #         total_rows = sum(1 for _ in open(csv_path)) - 1  # ヘッダーを除く行数
+    #
+    #         # print("path, snr, reverbe, angle")
+    #         for row in tqdm(reader, total=total_rows):
+    #             reverbe = int(row["reverbe"])
+    #             print("reverbe: ", reverbe * 0.01)
+    #
+    #             reverbe_par_json = f"{const.MIX_DATA_DIR}\\reverbe_condition\\{reverbe:03}sec_{ch}ch_{distance}cm.json"
+    #             if not os.path.isfile(reverbe_par_json):
+    #                 """録音(シミュレーション)"""
+    #                 reverbe_par = serch_reverbe_sec(reverbe_sec=reverbe * 0.01, channel=ch)  # 任意の残響になるようなパラメータを求める
+    #                 json_data = {"reverbe_par": reverbe_par}
+    #                 """ 出力先のディレクトリの確認 """
+    #                 my_func.exists_dir(my_func.get_dirname(reverbe_par_json))
+    #                 with open(reverbe_par_json, "w") as json_file:
+    #                     json.dump(json_data, json_file, indent=4)
+    #             else:
+    #                 print("json_path:", reverbe_par_json)
+    #                 with open(reverbe_par_json, "r") as json_file:
+    #                     json_data = json.load(json_file)
+    #                     reverbe_par = json_data["reverbe_par"]
     print("fin")
     #
     # for sub_dir in sub_dir_list:
@@ -468,5 +470,16 @@ if __name__ == "__main__":
     #               channel=ch,
     #               angle=angle,
     #               angle_name=angle_name)
-    # end = time.time()
-    # print(f"time:{(end - start) / 60:.2f}min")
+
+    for reverbe_sec in tqdm(range(10, 100+1)):
+        reverbe_par_json = f"{const.SAMPLE_DATA_DIR}\\reverbe_condition\\{reverbe_sec:03}sec.json"
+        if not os.path.isfile(reverbe_par_json):
+            """録音(シミュレーション)"""
+            reverbe_par = serch_reverbe_sec(reverbe_sec=reverbe_sec * 0.01)  # 任意の残響になるようなパラメータを求める
+            json_data = {"reverbe_par": reverbe_par}
+            """ 出力先のディレクトリの確認 """
+            my_func.exists_dir(my_func.get_dirname(reverbe_par_json))
+            with open(reverbe_par_json, "w") as json_file:
+                json.dump(json_data, json_file, indent=4)
+    end = time.time()
+    print(f"time:{(end - start) / 60:.2f}min")
