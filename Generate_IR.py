@@ -77,11 +77,11 @@ def IR_speech(out_dir, reverbe_sec, reverbe_par, channel=1, distance=0, is_line=
     """ チャンネルをまとめて保存 """
     """ reverberation_only """
     # print(f"ir_reverbe.shape:{ir_reverbe.shape}")               # 確認用
-    reverbe_path = f"{out_dir}/reverbe_only/{int(reverbe_sec * 10):02}sec.wav"
+    reverbe_path = f"{out_dir}/reverbe_only/{int(reverbe_sec * 10):03}sec.wav"
     rec_util.save_wave(ir_reverbe, reverbe_path)  # 保存
     """ clean """
     # print(f"ir_clean.shape:{ir_clean.shape}")               # 確認用
-    reverbe_path = f"{out_dir}/clean/{int(reverbe_sec * 10):02}sec.wav"
+    reverbe_path = f"{out_dir}/clean/{int(reverbe_sec * 10):03}sec.wav"
     rec_util.save_wave(ir_clean, reverbe_path)  # 保存
 
 def IR_noise(out_dir, reverbe_sec, reverbe_par, channel=1, distance=0, angle=np.pi, angle_name: str = "None",
