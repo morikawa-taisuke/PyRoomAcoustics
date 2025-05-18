@@ -4,32 +4,34 @@ import random
 
 from mymodule import my_func, const
 
-wav_path = os.path.join(const.SOUND_DATA_DIR, "sample_data", "speech", "DEMAND", "clean", "train")
 
-wav_list = my_func.get_file_list(wav_path)
-print(wav_path)
-print(len(wav_list))
+def main(wav_dir, noise_dir, csv_path):
+    wav_list = my_func.get_file_list(wav_dir)
+    noise_list = my_func.get_file_list(noise_dir)
+    # print("wav_dir:", wav_dir)
+    # print("wav_list:", len(wav_list))
+    # print("noise_list:", len(noise_list))
+    snr = [random.uniform(0.0, 10.0) for _ in range(len(wav_list))]
+    reverbe = [random.uniform(10.0, 100.0) for _ in range(len(wav_list))]
+    angle = [random.uniform(0.0, 90.0) for _ in range(len(wav_list))]
+    noise = [random.choice(noise_list) for _ in range(len(wav_list))]
+    # mic = [random.shuffle([0, 1, 2, 3]) for _ in range(len(wav_list))]
 
-snr = [random.uniform(0.0, 10.0) for _ in range(len(wav_list))]
-reverbe = [random.uniform(10.0, 100.0) for _ in range(len(wav_list))]
-angle = [random.uniform(0.0, 90.0) for _ in range(len(wav_list))]
-# mic = [random.shuffle([0, 1, 2, 3]) for _ in range(len(wav_list))]
+    # CSV ファイルに保存
+    with open(csv_path, mode='w', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        # ヘッダーの書き込み
+        writer.writerow(["wav_path", "noise_path", "snr", "reverbe", "angle"])
 
-# print(len(snr))
-# print(len(reverbe))
-# print(len(angle))
-# print(len(mic))
+        # 各行のデータを書き込み
+        for i in range(len(wav_list)):
+            writer.writerow([wav_list[i], noise[i], round(snr[i], 1), int(round(reverbe[i], 0)), round(angle[i], 1)])
 
-# CSV ファイルに保存
-csv_file = os.path.join(const.SOUND_DATA_DIR, "sample_data", "speech", "DEMAND", "clean", "condition", "train",
-                        "condition_1.csv")
-with open(csv_file, mode='w', newline='', encoding='utf-8') as file:
-    writer = csv.writer(file)
-    # ヘッダーの書き込み
-    writer.writerow(["wav_path", "snr", "reverbe", "angle"])
+        print(f"CSV file saved to {csv_path}")
 
-    # 各行のデータを書き込み
-    for i in range(len(wav_list)):
-        writer.writerow([wav_list[i], round(snr[i], 1), int(round(reverbe[i], 0)), round(angle[i], 1)])
-
-print(f"CSV file saved to {csv_file}")
+if __name__ == "__main__":
+    for i in range(1, 5):
+        wav_dir = os.path.join(const.SAMPLE_DATA_DIR, "speech", "DEMAND", "clean", "train")
+        noise_dir = os.path.join(const.SAMPLE_DATA_DIR, "noise", "DEMAND")
+        csv_path = os.path.join(const.SAMPLE_DATA_DIR, "speech", "DEMAND", "clean", "condition", "train", f"condition_{i}.csv")
+        main(wav_dir, noise_dir, csv_path)
