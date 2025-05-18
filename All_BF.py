@@ -6,9 +6,8 @@ import scipy as scipy
 import random
 import os
 #my_module
-import rec_config as rec_conf
-import rec_utility as rec_util
-from mymodule import my_func
+from mymodule import my_func, rec_config as rec_conf, rec_utility as rec_util
+
 
 def serch_reverbe_sec(reverbe_sec, channel):
     reverbe = reverbe_sec

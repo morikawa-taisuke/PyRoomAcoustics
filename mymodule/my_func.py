@@ -94,25 +94,23 @@ def get_subdir_list(path:str)->list:
     subdir_list = [subdir for subdir in os.listdir(path) if os.path.isdir(os.path.join(path,subdir))]
     return subdir_list
 
-def get_wave_filelist(path):
-    """ waveファイルのディレクトリまたはファイルの名前を取得する
-
-    Args:
-        path: パス
-
-    Returns:
-        filelist: wavファイルリスト
+def get_file_list(dir_path:str, ext:str='.wav') -> list:
     """
-    if os.path.isdir(path):
-        # 入力がディレクトリーの場合、ファイルリストをつくる
-        filelist = find_files(path, ext="wav", case_sensitive=True)
-    else:
-        # 入力が単一ファイルの場合
-        filelist = [path]
-    #print("number of file", len(filelist))
-    # print("file_list:",filelist)
+    指定したディレクトリ内の任意の拡張子のファイルをリストアップ
 
-    return filelist
+    Parameters
+    ----------
+    dir_path(str):ディレクトリのパス
+    ext(str):拡張子
+
+    Returns
+    -------
+    list[str]
+    """
+    if os.path.isdir(dir_path):
+        return [f'{dir_path}/{file_path}' for file_path in os.listdir(dir_path) if os.path.splitext(file_path)[1] == ext]
+    else:
+        return [dir_path]
 
 def load_wav(path):
     """ 保存のSRが異なれば変換する
