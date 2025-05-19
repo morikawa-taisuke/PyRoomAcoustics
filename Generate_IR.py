@@ -24,7 +24,7 @@ def IR_speech(out_dir, reverbe_sec, reverbe_par, channel=1, distance=0, is_line=
     Returns:
         None
     """
-    # print("out_dir:", out_dir)
+    print(f"reverbe: {reverbe_sec: 03}")
     num_sources = 1
 
     """ 音源のパラメータ """
@@ -77,11 +77,11 @@ def IR_speech(out_dir, reverbe_sec, reverbe_par, channel=1, distance=0, is_line=
     """ チャンネルをまとめて保存 """
     """ reverberation_only """
     # print(f"ir_reverbe.shape:{ir_reverbe.shape}")               # 確認用
-    reverbe_path = f"{out_dir}/reverbe_only/{int(reverbe_sec * 10):03}sec.wav"
+    reverbe_path = f"{out_dir}/reverbe_only/{reverbe_sec:03}sec.wav"
     rec_util.save_wave(ir_reverbe, reverbe_path)  # 保存
     """ clean """
     # print(f"ir_clean.shape:{ir_clean.shape}")               # 確認用
-    reverbe_path = f"{out_dir}/clean/{int(reverbe_sec * 10):03}sec.wav"
+    reverbe_path = f"{out_dir}/clean/{reverbe_sec:03}sec.wav"
     rec_util.save_wave(ir_clean, reverbe_path)  # 保存
 
 def IR_noise(out_dir, reverbe_sec, reverbe_par, channel=1, distance=0, angle=np.pi, angle_name: str = "None",
@@ -149,11 +149,11 @@ def IR_noise(out_dir, reverbe_sec, reverbe_par, channel=1, distance=0, angle=np.
     """ 畳み込んだ波形をファイルに書き込む 1つの音声ファイルに全てのチャンネルを保存 """
     """ reverberation_only """
     # print(f"ir_reverbe.shape:{ir_reverbe.shape}")               # 確認用
-    reverbe_path = f"{out_dir}/reverbe_only/{int(reverbe_sec * 10):03}sec_{angle_name}.wav"
+    reverbe_path = f"{out_dir}/reverbe_only/{reverbe_sec:03}sec_{angle_name}.wav"
     rec_util.save_wave(ir_reverbe, reverbe_path)    # 保存
     """ clean """
     # print(f"ir_clean.shape:{ir_clean.shape}")               # 確認用
-    clean_path = f"{out_dir}/clean/{int(reverbe_sec * 10):03}sec_{angle_name}.wav"
+    clean_path = f"{out_dir}/clean/{reverbe_sec:03}sec_{angle_name}.wav"
     rec_util.save_wave(ir_clean, clean_path)    # 保存
 
 def get_shape(data):
@@ -170,6 +170,7 @@ if __name__ == "__main__":
     is_line_list = [True]  # マイク配置が線形(True) or 円形(False)
 
     for reverbe_sec in tqdm(range(10, 100+1)):
+        print(f"reverbe_sec: ",reverbe_sec)
         reverbe_par_json = f"{const.SAMPLE_DATA_DIR}/reverbe_condition/{reverbe_sec:03}sec.json"
         # print("json_path:", reverbe_par_json)
         with open(reverbe_par_json, "r") as json_file:
@@ -183,10 +184,10 @@ if __name__ == "__main__":
             for distance in distance_list:
                 for channel in channel_list:
                     out_dir = os.path.join(const.SAMPLE_DATA_DIR, "IR",  f"{channel}ch_{distance}cm_{liner_circular}", "speech")
-                    IR_speech(out_dir, reverbe_sec * 0.01, reverbe_par, channel=channel, distance=distance, is_line=is_line)
+                    IR_speech(out_dir, reverbe_sec, reverbe_par, channel=channel, distance=distance, is_line=is_line)
                     out_dir = os.path.join(const.SAMPLE_DATA_DIR, "IR",  f"{channel}ch_{distance}cm_{liner_circular}", "noise")
                     for dig in range(0, 90+1, 1):
                         angle = math.radians(dig)   # rad ← °
                         angle_name = f"{dig:03}dig"
-                        IR_noise(out_dir, reverbe_sec * 0.01, reverbe_par, channel=channel, distance=distance, angle=angle, angle_name=angle_name, is_line=is_line)
+                        IR_noise(out_dir, reverbe_sec, reverbe_par, channel=channel, distance=distance, angle=angle, angle_name=angle_name, is_line=is_line)
 
