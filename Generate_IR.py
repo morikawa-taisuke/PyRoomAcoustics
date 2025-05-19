@@ -24,7 +24,7 @@ def IR_speech(out_dir, reverbe_sec, reverbe_par, channel=1, distance=0, is_line=
     Returns:
         None
     """
-    print(f"reverbe: {reverbe_sec: 03}")
+    # print(f"reverbe: {reverbe_sec: 03}")
     num_sources = 1
 
     """ 音源のパラメータ """
@@ -170,7 +170,7 @@ if __name__ == "__main__":
     is_line_list = [True]  # マイク配置が線形(True) or 円形(False)
 
     for reverbe_sec in tqdm(range(10, 100+1)):
-        print(f"reverbe_sec: ",reverbe_sec)
+        # print(f"reverbe_sec: ",reverbe_sec)
         reverbe_par_json = f"{const.SAMPLE_DATA_DIR}/reverbe_condition/{reverbe_sec:03}sec.json"
         # print("json_path:", reverbe_par_json)
         with open(reverbe_par_json, "r") as json_file:
