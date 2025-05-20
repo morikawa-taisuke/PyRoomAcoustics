@@ -6,6 +6,7 @@ from distutils.command.clean import clean
 import numpy as np
 import pyroomacoustics as pa
 from tqdm import tqdm
+import soundfile as sf
 
 from mymodule import const, rec_config as rec_conf, rec_utility as rec_util
 
@@ -68,6 +69,9 @@ def IR_speech(out_dir, reverbe_sec, reverbe_par, channel=1, distance=0, is_line=
     """ インパルス応答の波形データを保存 """
     ir_reverbe = room_reverbe.rir
     ir_clean = room_clean.rir
+    # print("ir_reverbe.shape: ", len(ir_reverbe[0][0]))
+    ir_reverbe = ir_reverbe[0][0]
+    ir_clean = ir_clean[0][0]
 
     """ 正規化の確認 """
     ir_reverbe /= np.max(np.abs(ir_reverbe))  # 可視化のため正規化
@@ -78,11 +82,11 @@ def IR_speech(out_dir, reverbe_sec, reverbe_par, channel=1, distance=0, is_line=
     """ reverberation_only """
     # print(f"ir_reverbe.shape:{ir_reverbe.shape}")               # 確認用
     reverbe_path = f"{out_dir}/reverbe_only/{reverbe_sec:03}sec.wav"
-    rec_util.save_wave(ir_reverbe, reverbe_path)  # 保存
+    sf.write(reverbe_path, ir_reverbe, sample_rate)
     """ clean """
     # print(f"ir_clean.shape:{ir_clean.shape}")               # 確認用
-    reverbe_path = f"{out_dir}/clean/{reverbe_sec:03}sec.wav"
-    rec_util.save_wave(ir_clean, reverbe_path)  # 保存
+    clean_path = f"{out_dir}/clean/{reverbe_sec:03}sec.wav"
+    sf.write(clean_path, ir_clean, sample_rate)
 
 def IR_noise(out_dir, reverbe_sec, reverbe_par, channel=1, distance=0, angle=np.pi, angle_name: str = "None",
            is_line=False):
@@ -139,7 +143,7 @@ def IR_noise(out_dir, reverbe_sec, reverbe_par, channel=1, distance=0, angle=np.
     """ インパルス応答の波形データを保存 """
     ir_reverbe = room_reverbe.rir
     ir_clean = room_clean.rir
-    # print(ir_reverbe)
+    # print("ir_reverbe.shape: ", ir_reverbe.shape)
     # print(ir_clean)
 
     """ 正規化 """
@@ -169,25 +173,28 @@ if __name__ == "__main__":
     distance_list = [0]  # マイク間隔 cm
     is_line_list = [True]  # マイク配置が線形(True) or 円形(False)
 
-    for reverbe_sec in tqdm(range(10, 100+1)):
-        # print(f"reverbe_sec: ",reverbe_sec)
-        reverbe_par_json = f"{const.SAMPLE_DATA_DIR}/reverbe_condition/{reverbe_sec:03}sec.json"
-        # print("json_path:", reverbe_par_json)
-        with open(reverbe_par_json, "r") as json_file:
-            json_data = json.load(json_file)
-            reverbe_par = json_data["reverbe_par"]
-        for is_line in is_line_list:
-            if is_line:
-                liner_circular = "liner"
-            else:
-                liner_circular = "circular"
-            for distance in distance_list:
-                for channel in channel_list:
-                    out_dir = os.path.join(const.SAMPLE_DATA_DIR, "IR",  f"{channel}ch_{distance}cm_{liner_circular}", "speech")
-                    IR_speech(out_dir, reverbe_sec, reverbe_par, channel=channel, distance=distance, is_line=is_line)
-                    out_dir = os.path.join(const.SAMPLE_DATA_DIR, "IR",  f"{channel}ch_{distance}cm_{liner_circular}", "noise")
-                    for dig in range(0, 90+1, 1):
-                        angle = math.radians(dig)   # rad ← °
-                        angle_name = f"{dig:03}dig"
-                        IR_noise(out_dir, reverbe_sec, reverbe_par, channel=channel, distance=distance, angle=angle, angle_name=angle_name, is_line=is_line)
+
+    # for reverbe_sec in tqdm(range(10, 100+1)):
+    # print(f"reverbe_sec: ",reverbe_sec)
+    reverbe_sec = 50
+    reverbe_par_json = f"{const.SAMPLE_DATA_DIR}/reverbe_condition/{reverbe_sec:03}sec.json"
+    # print("json_path:", reverbe_par_json)
+    with open(reverbe_par_json, "r") as json_file:
+        json_data = json.load(json_file)
+        reverbe_par = json_data["reverbe_par"]
+    for is_line in is_line_list:
+        if is_line:
+            liner_circular = "liner"
+        else:
+            liner_circular = "circular"
+        for distance in distance_list:
+            for channel in channel_list:
+                out_dir = os.path.join("./", "IR",  f"{channel}ch_{distance}cm_{liner_circular}", "speech")
+                # out_dir = os.path.join(const.SAMPLE_DATA_DIR, "IR",  f"{channel}ch_{distance}cm_{liner_circular}", "speech")
+                IR_speech(out_dir, reverbe_sec, reverbe_par, channel=channel, distance=distance, is_line=is_line)
+                # out_dir = os.path.join(const.SAMPLE_DATA_DIR, "IR",  f"{channel}ch_{distance}cm_{liner_circular}", "noise")
+                # for dig in range(0, 90+1, 1):
+                #     angle = math.radians(dig)   # rad ← °
+                #     angle_name = f"{dig:03}dig"
+                #     IR_noise(out_dir, reverbe_sec, reverbe_par, channel=channel, distance=distance, angle=angle, angle_name=angle_name, is_line=is_line)
 
