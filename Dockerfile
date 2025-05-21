@@ -1,14 +1,19 @@
-# ベースイメージを指定
-FROM python:3.8
+FROM nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu22.04
 
-# 作業ディレクトリを作成
+# 基本ツールのインストール
+RUN apt-get update && apt-get install -y \
+    python3 python3-pip git && \
+    rm -rf /var/lib/apt/lists/*
+
+# 作業ディレクトリ
 WORKDIR /app
 
-# ローカルのファイルをコンテナにコピー
+# ソースコードをコピー
 COPY . /app
 
-# 必要なライブラリをインストール
-RUN pip install --no-cache-dir -r requirements.txt
+# Pythonパッケージのインストール
+RUN pip3 install --upgrade pip
+RUN pip3 install -r requirements.txt
 
-# アプリケーションを実行
-# CMD ["python", "app.py"]
+# エントリーポイント（必要に応じて）
+#CMD ["python3", "train.py"]

@@ -132,21 +132,19 @@ if __name__ == '__main__':
 
     # noise_reverbe(args.csv_path, args.speech_dir, args.noise_dir, args.ir_dir, args.output_dir)
 
-    for i in range(3, 5 + 1):
-        # i = 3
-        csv_path = f"C:/Users/kataoka-lab/Desktop/sound_data/sample_data/speech/DEMAND/clean/condition/train/condition_{i}.csv"
-        speech_dir = "C:/Users/kataoka-lab/Desktop/sound_data/sample_data/speech/DEMAND/clean/train"
-        noise_dir = "C:/Users/kataoka-lab/Desktop/sound_data/sample_data/noise/DEMAND/"
-        ir_dir = "C:/Users/kataoka-lab/Desktop/sound_data/sample_data/IR/1ch_0cm_liner/clean"
-        output_dir = f"C:/Users/kataoka-lab/Desktop/sound_data/mix_data/DEMAND_1ch/condition_{i}/train/clean"
-        clean(csv_path, speech_dir, ir_dir, output_dir)
+    # for i in range(3, 5 + 1):
+    #     csv_path = f"C:/Users/kataoka-lab/Desktop/sound_data/sample_data/speech/DEMAND/clean/condition/train/condition_{i}.csv"
+    #     speech_dir = "C:/Users/kataoka-lab/Desktop/sound_data/sample_data/speech/DEMAND/clean/train"
+    #     noise_dir = "C:/Users/kataoka-lab/Desktop/sound_data/sample_data/noise/DEMAND/"
+    #     ir_dir = "C:/Users/kataoka-lab/Desktop/sound_data/sample_data/IR/1ch_0cm_liner/clean"
+    #     output_dir = f"C:/Users/kataoka-lab/Desktop/sound_data/mix_data/DEMAND_1ch/condition_{i}/train/clean"
+    #     clean(csv_path, speech_dir, ir_dir, output_dir)
         # noise_reverbe(csv_path, speech_dir, noise_dir, ir_dir, output_dir)
     for i in range(3, 5+1):
-    # i = 3
         csv_path = f"C:/Users/kataoka-lab/Desktop/sound_data/sample_data/speech/DEMAND/clean/condition/train/condition_{i}.csv"
         speech_dir = "C:/Users/kataoka-lab/Desktop/sound_data/sample_data/speech/DEMAND/clean/train"
         noise_dir = "C:/Users/kataoka-lab/Desktop/sound_data/sample_data/noise/DEMAND/"
         ir_dir = "C:/Users/kataoka-lab/Desktop/sound_data/sample_data/IR/1ch_0cm_liner/reverbe_only"
         output_dir =  f"C:/Users/kataoka-lab/Desktop/sound_data/mix_data/DEMAND_1ch/condition_{i}/train/noise_reverbe"
-        clean(csv_path, speech_dir, ir_dir, output_dir)
-        # noise_reverbe(csv_path, speech_dir, noise_dir, ir_dir, output_dir)
+        # clean(csv_path, speech_dir, ir_dir, output_dir)
+        noise_reverbe(csv_path, speech_dir, noise_dir, ir_dir, output_dir)
