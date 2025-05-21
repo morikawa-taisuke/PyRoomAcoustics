@@ -204,4 +204,3 @@ if __name__ == "__main__":
                         angle = math.radians(dig)   # rad ← °
                         angle_name = f"{dig:03}dig"
                         IR_noise(out_dir, reverbe_sec, reverbe_par, channel=channel, distance=distance, angle=angle, angle_name=angle_name, is_line=is_line)
-
