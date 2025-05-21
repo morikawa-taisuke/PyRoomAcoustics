@@ -25,7 +25,7 @@ def main(wav_dir, noise_dir, csv_path):
 
         # 各行のデータを書き込み
         for i in range(len(wav_list)):
-            writer.writerow([wav_list[i], noise[i], round(snr[i], 1), f"{int(round(reverbe[i], 0)):03}sec", f"{int(round(reverbe[i], 0)):03}sec_{int(round(angle[i], 0)):03}deg", int(round(reverbe[i], 0)), round(angle[i], 0)])
+            writer.writerow([my_func.get_fname(wav_list[i])[0], my_func.get_fname(noise[i])[0], round(snr[i], 1), f"{int(round(reverbe[i], 0)):03}sec", f"{int(round(reverbe[i], 0)):03}sec_{int(round(angle[i], 0)):03}dig", int(round(reverbe[i], 0)), round(angle[i], 0)])
 
         print(f"CSV file saved to {csv_path}")
 
