@@ -181,27 +181,27 @@ if __name__ == "__main__":
     is_line_list = [True]  # マイク配置が線形(True) or 円形(False)
 
 
-    for reverbe_sec in tqdm(range(10, 100+1)):
+    # for reverbe_sec in tqdm(range(10, 100+1)):
         # print(f"reverbe_sec: ",reverbe_sec)
-        # reverbe_sec = 50
-        reverbe_par_json = f"{const.SAMPLE_DATA_DIR}/reverbe_condition/{reverbe_sec:03}sec.json"
-        # print("json_path:", reverbe_par_json)
-        with open(reverbe_par_json, "r") as json_file:
-            json_data = json.load(json_file)
-            reverbe_par = json_data["reverbe_par"]
-        for is_line in is_line_list:
-            if is_line:
-                liner_circular = "liner"
-            else:
-                liner_circular = "circular"
-            for distance in distance_list:
-                for channel in channel_list:
-                    # out_dir = os.path.join("./", "IR",  f"{channel}ch_{distance}cm_{liner_circular}")
-                    out_dir = os.path.join(const.SAMPLE_DATA_DIR, "IR",  f"{channel}ch_{distance}cm_{liner_circular}")
-                    IR_speech(out_dir, reverbe_sec, reverbe_par, channel=channel, distance=distance, is_line=is_line)
-                    # out_dir = os.path.join(const.SAMPLE_DATA_DIR, "IR",  f"{channel}ch_{distance}cm_{liner_circular}")
-                    for dig in range(0, 90+1, 1):
-                        angle = math.radians(dig)   # rad ← °
-                        angle_name = f"{dig:03}dig"
-                        IR_noise(out_dir, reverbe_sec, reverbe_par, channel=channel, distance=distance, angle=angle, angle_name=angle_name, is_line=is_line)
+    reverbe_sec = 50
+    reverbe_par_json = f"{const.SAMPLE_DATA_DIR}/reverbe_condition/{reverbe_sec:03}sec.json"
+    # print("json_path:", reverbe_par_json)
+    with open(reverbe_par_json, "r") as json_file:
+        json_data = json.load(json_file)
+        reverbe_par = json_data["reverbe_par"]
+    for is_line in is_line_list:
+        if is_line:
+            liner_circular = "liner"
+        else:
+            liner_circular = "circular"
+        for distance in distance_list:
+            for channel in channel_list:
+                out_dir = os.path.join("./", "IR",  f"{channel}ch_{distance}cm_{liner_circular}")
+                # out_dir = os.path.join(const.SAMPLE_DATA_DIR, "IR",  f"{channel}ch_{distance}cm_{liner_circular}")
+                IR_speech(out_dir, reverbe_sec, reverbe_par, channel=channel, distance=distance, is_line=is_line)
+                # out_dir = os.path.join(const.SAMPLE_DATA_DIR, "IR",  f"{channel}ch_{distance}cm_{liner_circular}")
+                # for dig in range(0, 90+1, 1):
+                #     angle = math.radians(dig)   # rad ← °
+                #     angle_name = f"{dig:03}dig"
+                #     IR_noise(out_dir, reverbe_sec, reverbe_par, channel=channel, distance=distance, angle=angle, angle_name=angle_name, is_line=is_line)
 
