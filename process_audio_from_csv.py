@@ -34,7 +34,16 @@ def mix_snr(speech, noise, snr_db):
     noise = noise * np.sqrt(target_noise_power / (noise_power + 1e-10))
     return speech + noise
 
-def main(csv_path, speech_dir, noise_dir, speech_ir_dir, noise_ir_dir, output_dir):
+def main(csv_path, speech_dir, noise_dir, ir_dir, output_dir):
+    
+    print("--------------------------------")
+    print(f"csv_path: {csv_path}")
+    print(f"speech_dir: {speech_dir}")
+    print(f"noise_dir: {noise_dir}")
+    print(f"ir_dir: {ir_dir}")
+    print(f"output_dir: {output_dir}")
+    print("--------------------------------")
+    
     df = pd.read_csv(csv_path)
     os.makedirs(output_dir, exist_ok=True)
     my_func.exists_dir(output_dir)
@@ -50,8 +59,8 @@ def main(csv_path, speech_dir, noise_dir, speech_ir_dir, noise_ir_dir, output_di
         # ファイルパス生成
         speech_path = os.path.join(speech_dir, speech_file)
         noise_path = os.path.join(noise_dir, noise_file)
-        speech_ir_path = os.path.join(speech_ir_dir, "speech", speech_ir_file + ".wav")
-        noise_ir_path = os.path.join(noise_ir_dir, "noise", noise_ir_file + ".wav")
+        speech_ir_path = os.path.join(ir_dir, "speech", speech_ir_file + ".wav")
+        noise_ir_path = os.path.join(ir_dir, "noise", noise_ir_file + ".wav")
 
         # 読み込み
         speech, sr = load_wav(speech_path)
@@ -80,8 +89,7 @@ if __name__ == '__main__':
     parser.add_argument('--csv_path', type=str, help='csvファイルのパス')
     parser.add_argument('--speech_dir', type=str, help='speechデータのディレクトリ')
     parser.add_argument('--noise_dir', type=str, help='noiseデータのディレクトリ')
-    parser.add_argument('--speech_ir_dir', type=str, help='speech_IRのディレクトリ')
-    parser.add_argument('--noise_ir_dir', type=str, help='noise_IRのディレクトリ')
+    parser.add_argument('--ir_dir', type=str, help='IRのディレクトリ')
     parser.add_argument('--output_dir', type=str, help='出力先ディレクトリ')
     args = parser.parse_args()
-    main(args.csv_path, args.speech_dir, args.noise_dir, args.speech_ir_dir, args.noise_ir_dir, args.output_dir)
+    main(args.csv_path, args.speech_dir, args.noise_dir, args.ir_dir, args.output_dir)
