@@ -183,7 +183,7 @@ if __name__ == "__main__":
 
     for reverbe_sec in tqdm(range(10, 100+1)):
         # print(f"reverbe_sec: ",reverbe_sec)
-        reverbe_sec = 50
+        # reverbe_sec = 50
         reverbe_par_json = f"{const.SAMPLE_DATA_DIR}/reverbe_condition/{reverbe_sec:03}sec.json"
         # print("json_path:", reverbe_par_json)
         with open(reverbe_par_json, "r") as json_file:
