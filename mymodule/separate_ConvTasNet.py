@@ -2,18 +2,11 @@
 
 import os
 import numpy as np
-from librosa.util import find_files
-from librosa.core import stft, istft
-from tqdm import tqdm
 import torch
-import scipy.signal as sp
-from sklearn.preprocessing import StandardScaler
-from sklearn.preprocessing import MinMaxScaler
 #import dataset
 import const, my_func
 import ConvTasNet
-import matplotlib.pyplot as plt
-from scipy.signal import butter, lfilter, freqz
+
 """
 def try_gpu(e):
     if torch.cuda.is_available():

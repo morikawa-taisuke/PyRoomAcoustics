@@ -1,14 +1,12 @@
 import wave as wave
-import pyroomacoustics as pa
 import numpy as np
-import scipy
 import os
 import itertools
 import math
 import random
 
 from mymodule import my_func
-import rec_config as rec_conf
+from mymodule import rec_config as rec_conf
 
 
 def set_mic_coordinate(center, num_channels, distance):
@@ -35,7 +33,7 @@ def set_circular_mic_coordinate(center, num_channels:int, radius, rotate:bool=Fa
     :param center: マイクの中心点
     :param num_channels: チャンネル数
     :param radius: アレイマイクの半径
-    :param rotate: 回転の有無 回転した場合,話者に対して十字に配置, しない場合,Xのように配置する
+    :param rotate: 回転の有無 回転しない場合,話者に対して十字に配置, した場合,Xのように配置する_
     :return coordinate: マイクの座標
     """
     if not rotate:

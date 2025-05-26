@@ -1,12 +1,12 @@
+import csv
 import json
-import math
 import os.path
 import random
-import time
 
 import numpy as np
 import pyroomacoustics as pa
 from tqdm import tqdm
+import time
 
 # my_module
 from mymodule import const, rec_config as rec_conf, rec_utility as rec_util
@@ -371,6 +371,8 @@ def recoding2(wave_files, out_dir, snr, reverbe_sec, reverbe_par, channel=1, dis
         rec_util.save_wave(result_clean, clean_path)  # 保存
 
 
+
+
 def process_recoding_thread(angle, angle_name, reverbe_sec=5):
     speech_type = "subset_DEMAND"
     noise_type = "hoth"
@@ -378,13 +380,8 @@ def process_recoding_thread(angle, angle_name, reverbe_sec=5):
     sub_dir_list = my_func.get_subdir_list(target_dir)
     noise_path = f"{const.SAMPLE_DATA_DIR}\\noise\\{noise_type}.wav"  # 雑音信号のディレクトリ
     snr = 10  # SNR
-<<<<<<< HEAD
-    ch = 2  # マイク数
-    distance = 10    # cm
-=======
     ch = 4  # マイク数
     distance = 3  # cm
->>>>>>> 7bf77b0bf11038e2b42125c282fefc8206c40ea2
     is_split = False  # 信号の保存方法 True:各チャンネルごとにファイルを分ける False:1つのファイルにまとめる
     out_dir = f"{const.MIX_DATA_DIR}\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{ch}ch\\"
     # out_dir = f"{const.MIX_DATA_DIR}\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{ch}ch_{distance}cm\\{angle_name}"
@@ -428,101 +425,61 @@ def process_recoding_thread(angle, angle_name, reverbe_sec=5):
 
 if __name__ == "__main__":
     print("main")
-    """ シミュレーションの設定"""
-    # angle_list = [np.pi*i/4. for i in range(5)]
-    # angle_name_list = ["Right", "FrontRight", "Front", "FrontLeft", "Left"] # "Right", "FrontRight", "Front", "FrontLeft", "Left"
-    angle_list = [math.radians(i) for i in [30, 60, ]]
-    angle_name_list = ["30dig", "60dig", ]  # "Right", "FrontRight", "Front", "FrontLeft", "Left"
-    print(angle_list)
-    # # for channel in channel_list:
-    # # for reverbe_sec in reverbe_list:
-    # reverbe_sec = reverbe_list[0]
-    # out_dir = f"{const.MIX_DATA_DIR}\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{int(reverbe_sec * 10):02}sec_{channel_list}ch_circular_10cm\\{angle_name}"
     start = time.time()
-    """ マルチプロセスの場合 """
-    # with ProcessPoolExecutor() as executor:
-    #     executor.map(process_recoding_thread,
-    #                  angle_list,
-    #                  angle_name_list,)
-    # for reverbe in range(1, 6):
-    # reverbe = 5
+    ch = 1
+    distance = 6
+
+    # for count in range(1, 5+1):
+    #     csv_path = f"{const.SAMPLE_DATA_DIR}\\speech\\DEMAND\\clean\\condition\\train\\condition_{count}.csv"   # 実験の条件を記したcsvファイル
+    #     with open(csv_path) as csv_file:
+    #         reader = csv.DictReader(csv_file, delimiter=",")
+    #         total_rows = sum(1 for _ in open(csv_path)) - 1  # ヘッダーを除く行数
     #
-    # with ProcessPoolExecutor() as executor:
-    #     executor.map(process_recoding_thread,
-    #                  angle_list,
-    #                  angle_name_list,
-    #                  [reverbe]*len(angle_list))
+    #         # print("path, snr, reverbe, angle")
+    #         for row in tqdm(reader, total=total_rows):
+    #             reverbe = int(row["reverbe"])
+    #             print("reverbe: ", reverbe * 0.01)
+    #
+    #             reverbe_par_json = f"{const.MIX_DATA_DIR}\\reverbe_condition\\{reverbe:03}sec_{ch}ch_{distance}cm.json"
+    #             if not os.path.isfile(reverbe_par_json):
+    #                 """録音(シミュレーション)"""
+    #                 reverbe_par = serch_reverbe_sec(reverbe_sec=reverbe * 0.01, channel=ch)  # 任意の残響になるようなパラメータを求める
+    #                 json_data = {"reverbe_par": reverbe_par}
+    #                 """ 出力先のディレクトリの確認 """
+    #                 my_func.exists_dir(my_func.get_dirname(reverbe_par_json))
+    #                 with open(reverbe_par_json, "w") as json_file:
+    #                     json.dump(json_data, json_file, indent=4)
+    #             else:
+    #                 print("json_path:", reverbe_par_json)
+    #                 with open(reverbe_par_json, "r") as json_file:
+    #                     json_data = json.load(json_file)
+    #                     reverbe_par = json_data["reverbe_par"]
+    print("fin")
+    #
+    # for sub_dir in sub_dir_list:
+    #     """音声ファイルリストの作成"""
+    #     wave_file.append(target_file)
+    #     wave_file.append(noise_path)
+    #
+    #     """録音(シミュレーション)"""
+    #     recoding2(wave_files=wave_file,
+    #               out_dir=os.path.join(out_dir, sub_dir),
+    #               snr=snr,
+    #               reverbe_sec=reverbe * 0.1,
+    #               reverbe_par=reverbe_par,
+    #               channel=ch,
+    #               angle=angle,
+    #               angle_name=angle_name)
 
-    # for reverbe in range(1, 6):
-    speech_type = "subset_DEMAND"
-    noise_type = "hoth"
-    # target_dir = "F:\\sound_data\\sample_data\\speech\\DEMAND"  # 目的信号のディレクトリ
-    target_dir = f"{const.SAMPLE_DATA_DIR}\\speech\\{speech_type}\\"  # 目的信号のディレクトリ
-    sub_dir_list = my_func.get_subdir_list(target_dir)
-    noise_path = f"{const.SAMPLE_DATA_DIR}\\noise\\{noise_type}.wav"  # 雑音信号のディレクトリ
-    snr = 10  # SNR [dB]
-    # reverbe = 5  # 残響 [sec]
-<<<<<<< HEAD
-    ch = 2  # マイク数 [ch]
-    distance = 3   # マイクの間隔 [cm]
-=======
-    ch = 4  # マイク数 [ch]
-    distance = 3  # マイクの間隔 [cm]
->>>>>>> b64153ae1856d897d9783d94e0ce3f546ddf8c63
-    # for reverbe in range(1, 5+1):
-    for angle, angle_name in zip(angle_list, angle_name_list):
-        reverbe = 5
-        # angle_name = "00dig"
-<<<<<<< HEAD
-        angle = math.radians(0)
-        out_dir = f"{const.MIX_DATA_DIR}\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{reverbe:02}sec_{ch}ch_3cm\\"
-=======
-        angle = math.radians(angle)
-        out_dir = f"{const.MIX_DATA_DIR}\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{reverbe:02}sec_{ch}ch_{distance}cm\\{angle_name}"
->>>>>>> b64153ae1856d897d9783d94e0ce3f546ddf8c63
-        print("out_dir", out_dir)
-
-        """録音(シミュレーション)"""
-        reverbe_par_json = f"{const.MIX_DATA_DIR}\\reverbe_condition\\{reverbe:02}sec_{ch}ch_{distance}cm.json"
+    for reverbe_sec in tqdm(range(10, 100+1)):
+        reverbe_par_json = f"{const.SAMPLE_DATA_DIR}\\reverbe_condition\\{reverbe_sec:03}sec.json"
         if not os.path.isfile(reverbe_par_json):
-<<<<<<< HEAD
-            reverbe_par = serch_reverbe_sec(reverbe_sec=reverbe*0.1, channel=ch)  # 任意の残響になるようなパラメータを求める
-=======
-            reverbe_par = serch_reverbe_sec(reverbe_sec=reverbe * 0.1, channel=ch)  # 任意の残響になるようなパラメータを求める
->>>>>>> b64153ae1856d897d9783d94e0ce3f546ddf8c63
+            """録音(シミュレーション)"""
+            reverbe_par = serch_reverbe_sec(reverbe_sec=reverbe_sec * 0.01)  # 任意の残響になるようなパラメータを求める
             json_data = {"reverbe_par": reverbe_par}
             """ 出力先のディレクトリの確認 """
             my_func.exists_dir(my_func.get_dirname(reverbe_par_json))
             with open(reverbe_par_json, "w") as json_file:
                 json.dump(json_data, json_file, indent=4)
-        else:
-            print("json_path:", reverbe_par_json)
-            with open(reverbe_par_json, "r") as json_file:
-                json_data = json.load(json_file)
-                reverbe_par = json_data["reverbe_par"]
-            # print("b")
-
-        for sub_dir in sub_dir_list:
-            """音声ファイルリストの作成"""
-            target_list = my_func.get_wave_filelist(os.path.join(target_dir, sub_dir))
-            print(f"len:{len(target_list)}")
-            for target_file in tqdm(target_list):
-                wave_file = []
-                wave_file.append(target_file)
-                wave_file.append(noise_path)
-
-                """録音(シミュレーション)"""
-                recoding2(wave_files=wave_file,
-                          out_dir=os.path.join(out_dir, sub_dir),
-                          snr=snr,
-<<<<<<< HEAD
-                          reverbe_sec=reverbe*0.1,
-=======
-                          reverbe_sec=reverbe * 0.1,
->>>>>>> b64153ae1856d897d9783d94e0ce3f546ddf8c63
-                          reverbe_par=reverbe_par,
-                          channel=ch,
-                          angle=angle,
-                          angle_name=angle_name)
     end = time.time()
     print(f"time:{(end - start) / 60:.2f}min")
