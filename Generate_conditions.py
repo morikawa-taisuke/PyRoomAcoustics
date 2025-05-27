@@ -17,6 +17,7 @@ def main(wav_dir, noise_dir, csv_path):
     noise = [random.choice(noise_list) for _ in range(len(wav_list))]
     # mic = [random.shuffle([0, 1, 2, 3]) for _ in range(len(wav_list))]
 
+    my_func.exists_dir(csv_path)
     # CSV ファイルに保存
     with open(csv_path, mode='w', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
