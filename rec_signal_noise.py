@@ -378,8 +378,13 @@ def process_recoding_thread(angle, angle_name, reverbe_sec=5):
     sub_dir_list = my_func.get_subdir_list(target_dir)
     noise_path = f"{const.SAMPLE_DATA_DIR}\\noise\\{noise_type}.wav"  # 雑音信号のディレクトリ
     snr = 10  # SNR
+<<<<<<< HEAD
+    ch = 2  # マイク数
+    distance = 10    # cm
+=======
     ch = 4  # マイク数
     distance = 3  # cm
+>>>>>>> 7bf77b0bf11038e2b42125c282fefc8206c40ea2
     is_split = False  # 信号の保存方法 True:各チャンネルごとにファイルを分ける False:1つのファイルにまとめる
     out_dir = f"{const.MIX_DATA_DIR}\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{ch}ch\\"
     # out_dir = f"{const.MIX_DATA_DIR}\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{ch}ch_{distance}cm\\{angle_name}"
