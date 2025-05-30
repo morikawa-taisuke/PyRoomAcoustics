@@ -32,7 +32,7 @@ def main(wav_dir, noise_dir, csv_path):
 
 if __name__ == "__main__":
     for i in range(1, 5+1):
-        wav_dir = os.path.join(const.SAMPLE_DATA_DIR, "speech", "DEMAND", "clean", "train")
+        wav_dir = os.path.join(const.SAMPLE_DATA_DIR, "speech", "subset_DEMAND", "test")
         noise_dir = os.path.join(const.SAMPLE_DATA_DIR, "noise", "DEMAND")
-        csv_path = os.path.join(const.SAMPLE_DATA_DIR, "speech", "DEMAND", "clean", "condition", "train", f"condition_{i}.csv")
+        csv_path = os.path.join(const.SAMPLE_DATA_DIR, "speech", "subset_DEMAND", "condition", "test", f"condition_{i}.csv")
         main(wav_dir, noise_dir, csv_path)
