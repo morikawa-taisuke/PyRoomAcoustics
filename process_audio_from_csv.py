@@ -104,7 +104,7 @@ def clean(csv_path, speech_dir, ir_dir, output_dir):
         snr = float(row['snr'])
 
         # ファイルパス生成
-        speech_path = os.path.join(speech_dir, speech_file)
+        speech_path = os.path.join(speech_dir, speech_file + ".wav")
         speech_ir_path = os.path.join(ir_dir, "speech", speech_ir_file + ".wav")
 
         # 読み込み
@@ -130,25 +130,15 @@ if __name__ == '__main__':
     parser.add_argument('--output_dir', type=str, help='出力先ディレクトリ')
     args = parser.parse_args()
 
-    # noise_reverbe(args.csv_path, args.speech_dir, args.noise_dir, args.ir_dir, args.output_dir)
-
-    # for i in range(1, 2):
-    #     csv_path = f"C:/Users/kataoka-lab/Desktop/sound_data/sample_data/speech/DEMAND/clean/condition/train/condition_{i}.csv"
-    #     speech_dir = "C:/Users/kataoka-lab/Desktop/sound_data/sample_data/speech/DEMAND/clean/train"
-    #     noise_dir = "C:/Users/kataoka-lab/Desktop/sound_data/sample_data/noise/DEMAND/"
-    #     ir_dir = "C:/Users/kataoka-lab/Desktop/sound_data/sample_data/IR/1ch_0cm_liner/clean"
-    #     output_dir = f"C:/Users/kataoka-lab/Desktop/sound_data/mix_data/DEMAND_1ch/condition_{i}/train/clean"
-    #     clean(csv_path, speech_dir, ir_dir, output_dir)
-    #     noise_reverbe(csv_path, speech_dir, noise_dir, ir_dir, output_dir)
     for i in range(1, 2):
-        csv_path = f"C:/Users/kataoka-lab/Desktop/sound_data/sample_data/speech/DEMAND/clean/condition/train/condition_{i}.csv"
-        speech_dir = "C:/Users/kataoka-lab/Desktop/sound_data/sample_data/speech/DEMAND/clean/train"
+        csv_path = f"C:/Users/kataoka-lab/Desktop/sound_data/sample_data/speech/subset_DEMAND/condition/test/condition_{i}.csv"
+        speech_dir = "C:/Users/kataoka-lab/Desktop/sound_data/sample_data/speech/subset_DEMAND/test"
 
         ir_dir = "C:/Users/kataoka-lab/Desktop/sound_data/sample_data/IR/1ch_0cm_liner/clean"
         output_dir =  f"C:/Users/kataoka-lab/Desktop/sound_data/mix_data/DEMAND_1ch/condition_{i}/train/clean"
         clean(csv_path, speech_dir, ir_dir, output_dir)
 
-        noise_dir = "C:/Users/kataoka-lab/Desktop/sound_data/sample_data/noise/DEMAND/"
-        ir_dir = "C:/Users/kataoka-lab/Desktop/sound_data/sample_data/IR/1ch_0cm_liner/reverbe_only"
+        # noise_dir = "C:/Users/kataoka-lab/Desktop/sound_data/sample_data/noise/DEMAND/"
+        # ir_dir = "C:/Users/kataoka-lab/Desktop/sound_data/sample_data/IR/1ch_0cm_liner/reverbe_only"
         # output_dir =  f"C:/Users/kataoka-lab/Desktop/sound_data/mix_data/DEMAND_1ch/condition_{i}/train/noise_reverbe"
         # noise_reverbe(csv_path, speech_dir, noise_dir, ir_dir, output_dir)
