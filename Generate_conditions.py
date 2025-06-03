@@ -31,7 +31,7 @@ def main(wav_dir, noise_dir, csv_path):
         print(f"CSV file saved to {csv_path}")
 
 if __name__ == "__main__":
-    test_train = "train"
+    test_train = "test"
     for i in range(1, 5+1):
         wav_dir = os.path.join(const.SAMPLE_DATA_DIR, "speech", "subset_DEMAND", test_train)
         noise_dir = os.path.join(const.SAMPLE_DATA_DIR, "noise", "DEMAND")
