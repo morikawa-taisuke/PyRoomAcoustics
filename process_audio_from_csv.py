@@ -5,7 +5,7 @@ import numpy as np
 import soundfile as sf
 from scipy.signal import fftconvolve
 from tqdm import tqdm
-from mymodule import my_func
+from mymodule import my_func, const
 
 
 def load_wav(filepath):
@@ -133,8 +133,9 @@ def reverbe_only(csv_path, speech_dir, ir_dir, output_dir):
 
     for idx, row in tqdm(df.iterrows(), total=len(df)):
         # ファイル名抽出
+        reverbe_sec = int(0.5 * 100) #[sec]
         speech_file = os.path.basename(row['wav_path'])
-        speech_ir_file = os.path.basename(row['speech_IR'])
+        speech_ir_file = os.path.basename(f"{reverbe_sec:03}sec")
 
         # ファイルパス生成
         speech_path = os.path.join(speech_dir, speech_file + ".wav")
@@ -212,15 +213,17 @@ if __name__ == '__main__':
     parser.add_argument('--output_dir', type=str, help='出力先ディレクトリ')
     args = parser.parse_args()
 
-    for i in range(1, 3):
-        csv_path = f"C:/Users/kataoka-lab/Desktop/sound_data/sample_data/speech/subset_DEMAND/condition/test/condition_{i}.csv"
-        speech_dir = "C:/Users/kataoka-lab/Desktop/sound_data/sample_data/speech/subset_DEMAND/test"
+    test_train = "train"
+    for i in range(1, 2):
+        # "C:\Users\kataoka-lab\Desktop\sound_data\sample_data\speech\GNN\subset_DEMAND\condition\train\condition_1.csv"
+        csv_path = f"{const.SAMPLE_DATA_DIR}/speech/GNN/subset_DEMAND/condition/{test_train}/condition_{i}.csv"
+        speech_dir = f"{const.SAMPLE_DATA_DIR}/speech/subset_DEMAND/{test_train}"
 
-        ir_dir = "C:/Users/kataoka-lab/Desktop/sound_data/sample_data/IR/1ch_0cm_liner/clean"
-        output_dir =  f"C:/Users/kataoka-lab/Desktop/sound_data/mix_data/subset_DEMAND_1ch/condition_{i}/test/clean"
+        ir_dir = f"{const.SAMPLE_DATA_DIR}/IR/1ch_0cm_liner/clean"
+        output_dir =  f"{const.MIX_DATA_DIR}/subset_DEMAND_1ch/condition_{i}/{test_train}/clean"
         clean(csv_path, speech_dir, ir_dir, output_dir)
 
         # noise_dir = "C:/Users/kataoka-lab/Desktop/sound_data/sample_data/noise/DEMAND/"
-        # ir_dir = "C:/Users/kataoka-lab/Desktop/sound_data/sample_data/IR/1ch_0cm_liner/reverbe_only"
-        # output_dir =  f"C:/Users/kataoka-lab/Desktop/sound_data/mix_data/DEMAND_1ch/condition_{i}/train/noise_reverbe"
-        # noise_reverbe(csv_path, speech_dir, noise_dir, ir_dir, output_dir)
+        ir_dir = f"{const.SAMPLE_DATA_DIR}/IR/1ch_0cm_liner/reverbe_only"
+        output_dir =  f"{const.MIX_DATA_DIR}/subset_DEMAND_1ch/condition_{i}/{test_train}/reverbe_only"
+        reverbe_only(csv_path, speech_dir, ir_dir, output_dir)
