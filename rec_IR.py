@@ -19,14 +19,14 @@ os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 def serch_reverbe_sec(reverbe_sec, channel=1, angle=np.pi):
     reverbe = reverbe_sec
     cnt = 0
-    room_dim = np.r_[3.0, 3.0, 3.0]
+    room_dim = np.r_[10.0, 7.0, 3.0]
     """ 音源の読み込み """
     target_data = rec_util.load_wave_data(f"./mymodule/JA01F049.wav")
     noise_data = target_data
     wave_data = []  # 1つの配列に格納
     wave_data.append(target_data)
     wave_data.append(noise_data)
-    mic_center = room_dim / 2  # アレイマイクの中心[x,y,z](m)
+    mic_center = np.r_[3.0, 3.0, 1.2]  # アレイマイクの中心[x,y,z](m)
     num_channels = channel  # マイクの個数(チャンネル数)
     distance = 0.1  # 各マイクの間隔(m)
     mic_codinate = rec_util.set_mic_coordinate(center=mic_center,
@@ -86,11 +86,14 @@ def calc_RIR(wave_files, out_dir, snr, reverbe_sec, reverbe_par, channel=1, dist
     """ 音源のパラメータ """
     sample_rate = rec_conf.sampling_rate  # サンプリング周波数
     """ シミュレーションのパラメータ """
-    room_dim = np.r_[3.0, 3.0, 3.0]  # 部屋の大きさ[x,y,z](m)
+    room_dim = np.r_[10.0, 7.0, 3.0]  # 部屋の大きさ[x,y,z](m)
     num_sources = len(wave_files)   # シミュレーションで用いる音源数
-    mic_center = room_dim / 2  # アレイマイクの中心[x,y,z](m)
+    mic_center = np.r_[3.0, 3.0, 1.2]  # アレイマイクの中心[x,y,z](m)
     num_channels = channel  # マイクの個数(チャンネル数)
     distance = distance * 0.01  # 各マイクの間隔(m)
+    # if channel == 1:
+        # mic_coordinate = np.array([[mic_center[0], mic_center[1], mic_center[2]]])
+    # else:
     mic_coordinate = rec_util.set_mic_coordinate(center=mic_center, num_channels=num_channels, distance=distance)  # 線形アレイの場合
     # mic_coordinate = rec_util.set_circular_mic_coordinate(center=mic_center, num_channels=num_channels, radius=distance)  # 円形アレイの場合
 
@@ -190,6 +193,10 @@ def calc_RIR(wave_files, out_dir, snr, reverbe_sec, reverbe_par, channel=1, dist
         reverbe = np.convolve(wave_data[0], RIR_reverbe[ch_idx][0], mode='full')  # chごとに畳み込む
         noise = np.convolve(wave_data[0], RIR_noise[ch_idx][0], mode='full')  # chごとに畳み込む
         clean = np.convolve(wave_data[0], RIR_clean[ch_idx][0], mode='full')  # chごとに畳み込む
+        result_mix.append(mix)
+        result_reverbe.append(reverbe)
+        result_noise.append(noise)
+        result_clean.append(clean)
     print("a")
 
     # result_mix = np.asarray(result_mix)
@@ -261,7 +268,7 @@ def calc_RIR(wave_files, out_dir, snr, reverbe_sec, reverbe_par, channel=1, dist
 
     return RIR_mix, RIR_reverbe, RIR_noise, RIR_clean
 
-def conv_RIR(wave_files, out_dir, RIR, angle_name):
+# def conv__RIR(wave_files, out_dir, RIR, angle_name):
 
 
 
@@ -305,64 +312,34 @@ def process_recoding_thread(angle, angle_name, reverbe_sec = 5):
             wave_file.append(noise_path)
 
             """録音(シミュレーション)"""
-            recoding2(wave_files=wave_file,
-                      out_dir=os.path.join(out_dir, sub_dir),
-                      snr=snr,
-                      reverbe_sec=reverbe_sec*0.1,
-                      reverbe_par=reverbe_par,
-                      channel=ch,
-                      distance=distance,
-                      is_split=is_split,
-                      angle_name=angle_name)
+            # recoding2(wave_files=wave_file,
+            #           out_dir=os.path.join(out_dir, sub_dir),
+            #           snr=snr,
+            #           reverbe_sec=reverbe_sec*0.1,
+            #           reverbe_par=reverbe_par,
+            #           channel=ch,
+            #           distance=distance,
+            #           is_split=is_split,
+            #           angle_name=angle_name)
 
 if __name__ == "__main__":
     print("main")
     """ シミュレーションの設定"""
-    # angle_list = [np.pi*i/4. for i in range(5)]
-    # angle_name_list = ["Right", "FrontRight", "Front", "FrontLeft", "Left"] # "Right", "FrontRight", "Front", "FrontLeft", "Left"
-    angle_list = [math.radians(i) for i in [0,45,90]]
-    angle_name_list = ["00dig", "45dig", "90dig"] # "Right", "FrontRight", "Front", "FrontLeft", "Left"
-    print(angle_list)
-    # # for channel in channel_list:
-    # # for reverbe_sec in reverbe_list:
-    # reverbe_sec = reverbe_list[0]
-    # out_dir = f"{const.MIX_DATA_DIR}\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{int(reverbe_sec * 10):02}sec_{channel_list}ch_circular_10cm\\{angle_name}"
     start = time.time()
-    """ マルチプロセスの場合 """
-    # with ProcessPoolExecutor() as executor:
-    #     executor.map(process_recoding_thread,
-    #                  angle_list,
-    #                  angle_name_list,)
-    # for reverbe in range(1, 6):
-    # reverbe = 5
-    #
-    # with ProcessPoolExecutor() as executor:
-    #     executor.map(process_recoding_thread,
-    #                  angle_list,
-    #                  angle_name_list,
-    #                  [reverbe]*len(angle_list))
-
-    # for reverbe in range(1, 6):
     speech_type = "DEMAND"
     noise_type = "hoth"
-    # target_dir = "F:\\sound_data\\sample_data\\speech\\DEMAND"  # 目的信号のディレクトリ
-    # target_dir = f"{const.SAMPLE_DATA_DIR}\\speech\\{speech_type}\\"  # 目的信号のディレクトリ
-    # sub_dir_list = my_func.get_subdir_list(target_dir)
     noise_path = f"{const.SAMPLE_DATA_DIR}\\noise\\{noise_type}.wav"  # 雑音信号のディレクトリ
-    snr = 10  # SNR [dB]
-    # reverbe = 5  # 残響 [sec]
-    ch = 4  # マイク数 [ch]
-    distance = 10   # マイクの間隔 [cm]
-    # for reverbe in range(1, 5+1):
-    #     for angle, angle_name in zip(angle_list, angle_name_list):
+    snr = 5  # SNR [dB]
+    ch = 1  # マイク数 [ch]
+    distance = 0   # マイクの間隔 [cm]
     reverbe = 5
     angle_name = "00dig"
     angle = math.radians(0)
-    out_dir = f"{const.MIX_DATA_DIR}\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{ch}ch\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{reverbe:02}sec_{ch}ch\\"
+    out_dir = f"{const.MIX_DATA_DIR}\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{ch}ch\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{reverbe*1000:}msec_{ch}ch\\"
     print("out_dir", out_dir)
 
     """録音(シミュレーション)"""
-    reverbe_par_json = f"{const.MIX_DATA_DIR}\\reverbe_condition\\{reverbe:02}sec_{ch}ch_{distance}cm_Front.json"
+    reverbe_par_json = f"{const.MIX_DATA_DIR}\\reverbe_condition\\{reverbe*1000:}msec_{ch}ch_{distance}cm_Front.json"
     if not os.path.isfile(reverbe_par_json):
         reverbe_par = serch_reverbe_sec(reverbe_sec=reverbe*0.1, channel=ch)  # 任意の残響になるようなパラメータを求める
         json_data = {"reverbe_par": reverbe_par}
@@ -376,37 +353,11 @@ if __name__ == "__main__":
             json_data = json.load(json_file)
             reverbe_par = json_data["reverbe_par"]
         # print("b")
-    #
-    # for sub_dir in sub_dir_list:
-    #     """音声ファイルリストの作成"""
-    #     target_list = my_func.get_wave_filelist(os.path.join(target_dir, sub_dir))
-    #     print(f"len:{len(target_list)}")
-    #     for target_file in tqdm(target_list):
-    #         wave_file = []
-    #         wave_file.append(target_file)
-    #         wave_file.append(noise_path)
-    #
-    #         """録音(シミュレーション)"""
-    #         recoding2(wave_files=wave_file,
-    #                   out_dir=os.path.join(out_dir, sub_dir),
-    #                   snr=snr,
-    #                   reverbe_sec=reverbe*0.1,
-    #                   reverbe_par=reverbe_par,
-    #                   channel=ch,
-    #                   angle=angle,
-    #                   angle_name=angle_name)
 
     wave_file = ["C:\\Users\\kataoka-lab\\Desktop\\sound_data\\sample_data\\speech\\subset_DEMAND\\test\\p232_068_16kHz.wav",
                  "C:\\Users\\kataoka-lab\\Desktop\\sound_data\\sample_data\\noise\\hoth.wav"]
 
-    recoding3(wave_files=wave_file,
-              out_dir=os.path.join("C:\\Users\\kataoka-lab\\Desktop\\sound_data\\mix_data\\subset_DEMAND_hoth_1010dB_4ch_10cm",angle_name),
-              snr=snr,
-              reverbe_sec=reverbe*0.1,
-              reverbe_par=reverbe_par,
-              channel=ch,
-              angle=angle,
-              angle_name=angle_name)
-            
+    calc_RIR(wave_files=wave_file, out_dir=out_dir, snr=snr, reverbe_sec=reverbe, reverbe_par=reverbe_par, channel=ch, distance=distance, is_split=False, angle=np.pi, angle_name="None")
+
     end = time.time()
     print(f"time:{(end-start)/60:.2f}min")
