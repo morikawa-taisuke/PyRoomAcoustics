@@ -2,3 +2,4 @@
 */*.pyc
 */*.xml
 */PyRoomAcoustics.iml
+mymodule/__pycache__/
