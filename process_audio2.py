@@ -5,6 +5,8 @@ import numpy as np
 import soundfile as sf
 from scipy.signal import fftconvolve
 from tqdm import tqdm
+from tqdm.contrib import tzip
+import random
 from mymodule import my_func, const
 
 
@@ -36,22 +38,19 @@ def mix_snr(speech, noise, snr_db):
 
 
 def clean(speech_dir, ir_path, output_dir):
+    my_func.exists_dir(output_dir)
+
+    speech_files = my_func.get_file_list(speech_dir)
+
     print("-"*32)
-    print(f"speech_dir: {speech_dir}")
+    print(f"speech_dir({len(speech_files)}): {speech_dir}")
     print(f"ir_dir: {ir_path}")
     print(f"output_dir: {output_dir}")
     print("-"*32)
 
-    os.makedirs(output_dir, exist_ok=True)
-    my_func.exists_dir(output_dir)
-
-    speech_files = [f for f in os.listdir(speech_dir) if f.endswith('.wav')]
-
     for speech_file in tqdm(speech_files):
-        snr = 5.0  # SNRは0に設定
 
         # 読み込み
-        speech_file = os.path.join(speech_dir, speech_file)
         speech, sr = load_wav(speech_file)
         speech_ir, _ = load_wav(ir_path[0])
 
@@ -64,30 +63,29 @@ def clean(speech_dir, ir_path, output_dir):
         save_wav(out_path, speech_reverb, sr)
         # print(f"Saved: {out_path}")
 
-def noise_reverbe(speech_dir, noise_path, ir_path, output_dir):
-    print("--------------------------------")
+def noise_reverbe(speech_dir, noise_dir, ir_path, output_dir):
+    print("-"*32)
     print(f"speech_dir: {speech_dir}")
-    print(f"noise_dir: {noise_path}")
+    print(f"noise_dir: {noise_dir}")
     print(f"ir_dir: {ir_path}")
     print(f"output_dir: {output_dir}")
-    print("--------------------------------")
+    print("-"*32)
 
-    os.makedirs(output_dir, exist_ok=True)
     my_func.exists_dir(output_dir)
 
-    speech_files = [f for f in os.listdir(speech_dir) if f.endswith('.wav')]
+    speech_files = my_func.get_file_list(speech_dir)
+    noise_files = [random.choice(my_func.get_file_list(noise_dir)) for _ in range(len(speech_files))]
 
-    for speech_file in tqdm(speech_files, total=len(speech_files)):
-        snr = 5.0  # SNRは0に設定
-
+    snr = 5.0  # SNRは0に設定
+    reverbe = 0.5   # reverberation timeは0.5秒に設定
+    for (speech_file, noise_file) in tzip(speech_files, noise_files):
         # ファイルパス生成
-        speech_file = os.path.join(speech_dir, speech_file)
         speech_ir_path = ir_path[0]
         noise_ir_path = ir_path[1]
 
         # 読み込み
         speech, sr = load_wav(speech_file)
-        noise, _ = load_wav(noise_path)
+        noise, _ = load_wav(noise_file)
         speech_ir, _ = load_wav(speech_ir_path)
         noise_ir, _ = load_wav(noise_ir_path)
 
@@ -102,25 +100,25 @@ def noise_reverbe(speech_dir, noise_path, ir_path, output_dir):
         mixed = mix_snr(speech_reverb, noise_reverb, snr)
 
         # 保存
-        out_name = f"{my_func.get_fname(speech_file)[0]}_{my_func.get_fname(noise_path)[0]}_{int(snr * 10):03}dB.wav"
+        out_name = f"{my_func.get_fname(speech_file)[0]}_{my_func.get_fname(noise_file)[0]}_{int(snr * 10):03}dB_{int(reverbe * 1000)}msec.wav"
         out_path = os.path.join(output_dir, out_name)
         save_wav(out_path, mixed, sr)
         # print(f"Saved: {out_path}")
 
 def reverbe_only(speech_dir, ir_path, output_dir):
-    print("--------------------------------")
+    print("-"*32)
     print(f"speech_dir: {speech_dir}")
     print(f"ir_dir: {ir_path}")
     print(f"output_dir: {output_dir}")
-    print("--------------------------------")
+    print("-"*32)
 
-    speech_files = [f for f in os.listdir(speech_dir) if f.endswith('.wav')]
-    os.makedirs(output_dir, exist_ok=True)
     my_func.exists_dir(output_dir)
 
+    speech_files = my_func.get_file_list(speech_dir)
+
+    reverbe = 0.5   # reverberation timeは0.5秒に設定
     for speech_file in tqdm(speech_files):
         # 読み込み
-        speech_file = os.path.join(speech_dir, speech_file)
         speech, sr = load_wav(speech_file)
         speech_ir, _ = load_wav(ir_path[0])
 
@@ -128,39 +126,33 @@ def reverbe_only(speech_dir, ir_path, output_dir):
         speech_reverb = apply_ir(speech, speech_ir)
 
         # 保存
-        out_name = f"{my_func.get_fname(speech_file)[0]}.wav"
+        out_name = f"{my_func.get_fname(speech_file)[0]}_{int(reverbe * 1000)}msec.wav"
         out_path = os.path.join(output_dir, out_name)
         save_wav(out_path, speech_reverb, sr)
         # print(f"Saved: {out_path}")
 
 def noise_only(speech_dir, noise_dir, ir_path, output_dir):
-    print("--------------------------------")
+    print("-"*32)
     print(f"speech_dir: {speech_dir}")
     print(f"noise_dir: {noise_dir}")
     print(f"ir_dir: {ir_path}")
     print(f"output_dir: {output_dir}")
-    print("--------------------------------")
+    print("-"*32)
 
-    os.makedirs(output_dir, exist_ok=True)
     my_func.exists_dir(output_dir)
 
-    for idx, row in tqdm(df.iterrows(), total=len(df)):
-        # ファイル名抽出
-        speech_file = os.path.basename(row['wav_path'])
-        noise_file = os.path.basename(row['noise_path'])
-        speech_ir_file = os.path.basename(row['speech_IR'])
-        noise_ir_file = os.path.basename(row['noise_IR'])
-        snr = float(row['snr'])
+    speech_files = my_func.get_file_list(speech_dir)
+    noise_files = [random.choice(my_func.get_file_list(noise_dir)) for _ in range(len(speech_files))]
 
+    snr = 5.0  # SNRは0に設定
+    for (speech_file, noise_file) in tzip(speech_files, noise_files):
         # ファイルパス生成
-        speech_path = os.path.join(speech_dir, speech_file)
-        noise_path = os.path.join(noise_dir, noise_file)
-        speech_ir_path = os.path.join(ir_dir, "speech", speech_ir_file + ".wav")
-        noise_ir_path = os.path.join(ir_dir, "noise", noise_ir_file + ".wav")
+        speech_ir_path = ir_path[0]
+        noise_ir_path = ir_path[1]
 
         # 読み込み
-        speech, sr = load_wav(speech_path)
-        noise, _ = load_wav(noise_path)
+        speech, sr = load_wav(speech_file)
+        noise, _ = load_wav(noise_file)
         speech_ir, _ = load_wav(speech_ir_path)
         noise_ir, _ = load_wav(noise_ir_path)
 
@@ -190,22 +182,30 @@ if __name__ == '__main__':
     parser.add_argument('--output_dir', type=str, help='出力先ディレクトリ')
     args = parser.parse_args()
 
-    test_train = "train"
-    for i in range(1, 2):
+    test_train_list = ["test", "train"]
+    for test_train in test_train_list:
         # "C:\Users\kataoka-lab\Desktop\sound_data\sample_data\speech\GNN\subset_DEMAND\condition\train\condition_1.csv"
         speech_dir = f"{const.SAMPLE_DATA_DIR}/speech/subset_DEMAND/{test_train}"
+        out_dir_name = f"subset_DEMAND_hoth_5dB_500msec"
 
-        ir_dir = [f"C:/Users/kataoka-lab/Desktop/sound_data/sample_data/IR/1ch_0cm_liner/clean/speech/050sec.wav",
-                  f"C:/Users/kataoka-lab/Desktop/sound_data/sample_data/IR/1ch_0cm_liner/clean/noise/050sec_000dig.wav"]
-        output_dir =  f"{const.MIX_DATA_DIR}/subset_DEMAND_1ch/{test_train}/clean"
+        # 教師信号
+        ir_dir = [f"{const.SAMPLE_DATA_DIR}/IR/1ch_0cm_liner/clean/speech/050sec.wav",
+                  f"{const.SAMPLE_DATA_DIR}/IR/1ch_0cm_liner/clean/noise/050sec_000dig.wav"]
+        output_dir =  f"{const.MIX_DATA_DIR}/{out_dir_name}/{test_train}/clean"
         clean(speech_dir, ir_dir, output_dir)
 
-        # noise_dir = "C:/Users/kataoka-lab/Desktop/sound_data/sample_data/noise/DEMAND/"
-        ir_dir = [f"C:/Users/kataoka-lab/Desktop/sound_data/sample_data/IR/1ch_0cm_liner/reverbe_only/speech/050sec.wav",
-                  f"C:/Users/kataoka-lab/Desktop/sound_data/sample_data/IR/1ch_0cm_liner/reverbe_only/noise/050sec_000dig.wav"]
-        output_dir =  f"{const.MIX_DATA_DIR}/subset_DEMAND_1ch/{test_train}/reverbe_only"
+        # reverbe_only
+        ir_dir = [f"{const.SAMPLE_DATA_DIR}/IR/1ch_0cm_liner/reverbe_only/speech/050sec.wav",
+                  f"{const.SAMPLE_DATA_DIR}/IR/1ch_0cm_liner/reverbe_only/noise/050sec_000dig.wav"]
+        output_dir =  f"{const.MIX_DATA_DIR}/{out_dir_name}/{test_train}/reverbe_only"
         reverbe_only(speech_dir, ir_dir, output_dir)
 
+        # noise_reverbe
         noise_dir = f"{const.SAMPLE_DATA_DIR}/noise/hoth.wav"
-        output_dir =  f"{const.MIX_DATA_DIR}/subset_DEMAND_1ch/{test_train}/noise_reverbe"
+        output_dir =  f"{const.MIX_DATA_DIR}/{out_dir_name}/{test_train}/noise_reverbe"
         noise_reverbe(speech_dir, noise_dir, ir_dir, output_dir)
+
+        # noise_only
+        noise_dir = f"{const.SAMPLE_DATA_DIR}/noise/hoth.wav"
+        output_dir =  f"{const.MIX_DATA_DIR}/{out_dir_name}/{test_train}/noise_only"
+        noise_only(speech_dir, noise_dir, ir_dir, output_dir)
