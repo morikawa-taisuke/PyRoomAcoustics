@@ -234,7 +234,7 @@ if __name__ == "__main__":
     for reverbe_sec in tqdm(range(50, 50+1)):
         # print(f"reverbe_sec: ",reverbe_sec)
         # reverbe_sec = 50
-        reverbe_par_json = f"{const.MIX_DATA_DIR}/reverbe_condition/{reverbe_sec*100}msec.json"
+        reverbe_par_json = f"{const.MIX_DATA_DIR}/reverbe_condition/{reverbe_sec*10}msec.json"
         # print("json_path:", reverbe_par_json)
         with open(reverbe_par_json, "r") as json_file:
             json_data = json.load(json_file)

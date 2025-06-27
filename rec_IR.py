@@ -332,16 +332,16 @@ if __name__ == "__main__":
     snr = 5  # SNR [dB]
     ch = 1  # マイク数 [ch]
     distance = 0   # マイクの間隔 [cm]
-    reverbe = 5
+    reverbe = 0.5
     angle_name = "00dig"
     angle = math.radians(0)
-    out_dir = f"{const.MIX_DATA_DIR}\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{ch}ch\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{reverbe*1000:}msec_{ch}ch\\"
+    out_dir = f"{const.MIX_DATA_DIR}\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{ch}ch\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{int(reverbe*1000)}msec_{ch}ch\\"
     print("out_dir", out_dir)
 
     """録音(シミュレーション)"""
-    reverbe_par_json = f"{const.MIX_DATA_DIR}\\reverbe_condition\\{reverbe*1000:}msec_{ch}ch_{distance}cm_Front.json"
+    reverbe_par_json = f"{const.MIX_DATA_DIR}\\reverbe_condition\\{int(reverbe*1000)}msec.json"
     if not os.path.isfile(reverbe_par_json):
-        reverbe_par = serch_reverbe_sec(reverbe_sec=reverbe*0.1, channel=ch)  # 任意の残響になるようなパラメータを求める
+        reverbe_par = serch_reverbe_sec(reverbe_sec=reverbe, channel=ch)  # 任意の残響になるようなパラメータを求める
         json_data = {"reverbe_par": reverbe_par}
         """ 出力先のディレクトリの確認 """
         my_func.exists_dir(my_func.get_dirname(reverbe_par_json))

@@ -191,21 +191,23 @@ if __name__ == '__main__':
         # 教師信号
         ir_dir = [f"{const.SAMPLE_DATA_DIR}/IR/1ch_0cm_liner/clean/speech/050sec.wav",
                   f"{const.SAMPLE_DATA_DIR}/IR/1ch_0cm_liner/clean/noise/050sec_000dig.wav"]
-        output_dir =  f"{const.MIX_DATA_DIR}/{out_dir_name}/{test_train}/clean"
-        clean(speech_dir, ir_dir, output_dir)
-
-        # reverbe_only
-        ir_dir = [f"{const.SAMPLE_DATA_DIR}/IR/1ch_0cm_liner/reverbe_only/speech/050sec.wav",
-                  f"{const.SAMPLE_DATA_DIR}/IR/1ch_0cm_liner/reverbe_only/noise/050sec_000dig.wav"]
-        output_dir =  f"{const.MIX_DATA_DIR}/{out_dir_name}/{test_train}/reverbe_only"
-        reverbe_only(speech_dir, ir_dir, output_dir)
-
-        # noise_reverbe
-        noise_dir = f"{const.SAMPLE_DATA_DIR}/noise/hoth.wav"
-        output_dir =  f"{const.MIX_DATA_DIR}/{out_dir_name}/{test_train}/noise_reverbe"
-        noise_reverbe(speech_dir, noise_dir, ir_dir, output_dir)
-
+        # output_dir =  f"{const.MIX_DATA_DIR}/{out_dir_name}/{test_train}/clean"
+        # clean(speech_dir, ir_dir, output_dir)
+        
         # noise_only
         noise_dir = f"{const.SAMPLE_DATA_DIR}/noise/hoth.wav"
         output_dir =  f"{const.MIX_DATA_DIR}/{out_dir_name}/{test_train}/noise_only"
         noise_only(speech_dir, noise_dir, ir_dir, output_dir)
+
+        # # reverbe_only
+        # ir_dir = [f"{const.SAMPLE_DATA_DIR}/IR/1ch_0cm_liner/reverbe_only/speech/050sec.wav",
+        #           f"{const.SAMPLE_DATA_DIR}/IR/1ch_0cm_liner/reverbe_only/noise/050sec_000dig.wav"]
+        # output_dir =  f"{const.MIX_DATA_DIR}/{out_dir_name}/{test_train}/reverbe_only"
+        # reverbe_only(speech_dir, ir_dir, output_dir)
+
+        # # noise_reverbe
+        # noise_dir = f"{const.SAMPLE_DATA_DIR}/noise/hoth.wav"
+        # output_dir =  f"{const.MIX_DATA_DIR}/{out_dir_name}/{test_train}/noise_reverbe"
+        # noise_reverbe(speech_dir, noise_dir, ir_dir, output_dir)
+
+        
