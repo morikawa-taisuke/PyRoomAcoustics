@@ -76,7 +76,7 @@ def noise_reverbe(speech_dir, noise_dir, ir_path, output_dir):
     speech_files = my_func.get_file_list(speech_dir)
     noise_files = [random.choice(my_func.get_file_list(noise_dir)) for _ in range(len(speech_files))]
 
-    snr = 5.0  # SNRは0に設定
+    snr = 0.0  # SNRは0に設定
     reverbe = 0.5   # reverberation timeは0.5秒に設定
     for (speech_file, noise_file) in tzip(speech_files, noise_files):
         # ファイルパス生成
@@ -144,7 +144,7 @@ def noise_only(speech_dir, noise_dir, ir_path, output_dir):
     speech_files = my_func.get_file_list(speech_dir)
     noise_files = [random.choice(my_func.get_file_list(noise_dir)) for _ in range(len(speech_files))]
 
-    snr = 5.0  # SNRは0に設定
+    snr = 0.0  # SNRは0に設定
     for (speech_file, noise_file) in tzip(speech_files, noise_files):
         # ファイルパス生成
         speech_ir_path = ir_path[0]
@@ -185,8 +185,8 @@ if __name__ == '__main__':
     test_train_list = ["test", "train"]
     for test_train in test_train_list:
         # "C:\Users\kataoka-lab\Desktop\sound_data\sample_data\speech\GNN\subset_DEMAND\condition\train\condition_1.csv"
-        speech_dir = f"{const.SAMPLE_DATA_DIR}/speech/subset_DEMAND/{test_train}"
-        out_dir_name = f"subset_DEMAND_hoth_5dB_500msec"
+        speech_dir = f"{const.SAMPLE_DATA_DIR}/speech/DEMAND/{test_train}\clean"
+        out_dir_name = f"DEMAND_hoth_0dB_500msec"
 
         # 教師信号
         ir_dir = [f"{const.SAMPLE_DATA_DIR}/IR/1ch_0cm_liner/clean/speech/050sec.wav",
@@ -198,16 +198,16 @@ if __name__ == '__main__':
         noise_dir = f"{const.SAMPLE_DATA_DIR}/noise/hoth.wav"
         output_dir =  f"{const.MIX_DATA_DIR}/{out_dir_name}/{test_train}/noise_only"
         noise_only(speech_dir, noise_dir, ir_dir, output_dir)
+        
+        # reverbe_only
+        ir_dir = [f"{const.SAMPLE_DATA_DIR}/IR/1ch_0cm_liner/reverbe_only/speech/050sec.wav",
+                  f"{const.SAMPLE_DATA_DIR}/IR/1ch_0cm_liner/reverbe_only/noise/050sec_000dig.wav"]
+        output_dir =  f"{const.MIX_DATA_DIR}/{out_dir_name}/{test_train}/reverbe_only"
+        reverbe_only(speech_dir, ir_dir, output_dir)
 
-        # # reverbe_only
-        # ir_dir = [f"{const.SAMPLE_DATA_DIR}/IR/1ch_0cm_liner/reverbe_only/speech/050sec.wav",
-        #           f"{const.SAMPLE_DATA_DIR}/IR/1ch_0cm_liner/reverbe_only/noise/050sec_000dig.wav"]
-        # output_dir =  f"{const.MIX_DATA_DIR}/{out_dir_name}/{test_train}/reverbe_only"
-        # reverbe_only(speech_dir, ir_dir, output_dir)
-
-        # # noise_reverbe
-        # noise_dir = f"{const.SAMPLE_DATA_DIR}/noise/hoth.wav"
-        # output_dir =  f"{const.MIX_DATA_DIR}/{out_dir_name}/{test_train}/noise_reverbe"
-        # noise_reverbe(speech_dir, noise_dir, ir_dir, output_dir)
+        # noise_reverbe
+        noise_dir = f"{const.SAMPLE_DATA_DIR}/noise/hoth.wav"
+        output_dir =  f"{const.MIX_DATA_DIR}/{out_dir_name}/{test_train}/noise_reverbe"
+        noise_reverbe(speech_dir, noise_dir, ir_dir, output_dir)
 
         
