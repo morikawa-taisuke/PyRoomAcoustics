@@ -185,7 +185,7 @@ if __name__ == '__main__':
     test_train_list = ["test", "train"]
     for test_train in test_train_list:
         # "C:\Users\kataoka-lab\Desktop\sound_data\sample_data\speech\GNN\subset_DEMAND\condition\train\condition_1.csv"
-        speech_dir = f"{const.SAMPLE_DATA_DIR}/speech/DEMAND/{test_train}\clean"
+        speech_dir = f"{const.SAMPLE_DATA_DIR}/speech/DEMAND/clean/{test_train}"
         out_dir_name = f"DEMAND_hoth_0dB_500msec"
 
         # 教師信号
