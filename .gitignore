@@ -3,5 +3,6 @@
 */*.xml
 */*.iml
 */.idea/
+.idea/
 */PyRoomAcoustics.iml
 mymodule/__pycache__/
