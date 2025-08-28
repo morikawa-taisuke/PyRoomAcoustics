@@ -449,13 +449,13 @@ if __name__ == "__main__":
     #                  [reverbe]*len(angle_list))
 
     # for reverbe in range(1, 6):
-    speech_type = "subset_DEMAND"
+    speech_type = "DEMAND"
     noise_type = "hoth"
     # target_dir = "F:\\sound_data\\sample_data\\speech\\DEMAND"  # 目的信号のディレクトリ
-    target_dir = f"{const.SAMPLE_DATA_DIR}\\speech\\{speech_type}\\"  # 目的信号のディレクトリ
+    target_dir = f"{const.SAMPLE_DATA_DIR}\\speech\\{speech_type}\\clean"  # 目的信号のディレクトリ
     sub_dir_list = my_func.get_subdir_list(target_dir)
     noise_path = f"{const.SAMPLE_DATA_DIR}\\noise\\{noise_type}.wav"  # 雑音信号のディレクトリ
-    snr = 10  # SNR [dB]
+    snr = 5  # SNR [dB]
     # reverbe = 5  # 残響 [sec]
     ch = 1  # マイク数 [ch]
     distance = 0   # マイクの間隔 [cm]
