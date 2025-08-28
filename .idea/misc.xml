@@ -3,5 +3,5 @@
   <component name="Black">
     <option name="sdkName" value="PYROOMACOUSTICS" />
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="pyroomacoustic" project-jdk-type="Python SDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="PYROOMACOUSTICS" project-jdk-type="Python SDK" />
 </project>
