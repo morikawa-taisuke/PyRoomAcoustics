@@ -1,5 +1,7 @@
 */__pycache__/
 */*.pyc
 */*.xml
+*/*.iml
+*/.idea/
 */PyRoomAcoustics.iml
 mymodule/__pycache__/
