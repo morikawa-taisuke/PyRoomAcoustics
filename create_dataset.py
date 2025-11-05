@@ -1,191 +1,103 @@
-import argparse
-import json
-import numpy as np
 import pyroomacoustics as pra
-from scipy.io import wavfile
-from pathlib import Path
+import numpy as np
+import soundfile as sf
+import os
 import random
-from tqdm import tqdm
-import sys
-
-from mymodule import const
-from mymodule import rec_utility as rec_util
-
-# ===================================================================
-# ▼▼▼ 設定項目 ▼▼▼
-# ===================================================================
-
-# --- 入力設定 ---
-# 前のステップで作成したJSONファイルのパス
-DEFAULT_JSON_PATH = "vctk_split_file_list.json"
-
-# --- 出力設定 ---
-# 生成したデータセットを保存する親ディレクトリ
-DEFAULT_OUTPUT_DIR = Path("C:/Users/kataoka-lab/Desktop/sound_data/mix_data/vctk_reverb_noise")
-
-# --- 雑音設定 ---
-# 使用する雑音ファイルのパス (ご自身の環境に合わせて変更してください)
-# この雑音ファイルは、シミュレーション中にランダムな箇所が切り取られて使用されます。
-DEFAULT_NOISE_PATH = Path(f"{const.SAMPLE_DATA_DIR}\\noise\\hoth.wav")
-
-# --- シミュレーションのランダムパラメータ範囲 ---
-# 部屋の大きさ [x, y, z] (メートル)
-ROOM_DIM_RANGE = {
-	'x': (3, 3),
-	'y': (3, 3),
-	'z': (3, 3)
-}
-
-# 残響時間 RT60 (秒)
-RT60_RANGE = (0.5, 0.5)
-
-# 信号対雑音比 SNR (dB)
-SNR_RANGE = (5, 5)
 
 
-# ===================================================================
-# ▲▲▲ 設定項目 ▲▲▲
-# ===================================================================
-
-def create_augmented_dataset(json_path: Path, output_dir: Path, noise_path: Path):
+class DatasetGenerator:
 	"""
-	JSONファイルに基づき、音声にランダムな残響と雑音を付与してデータセットを生成する。
+	音声強調用データセットを生成するクラス
 	"""
-	# ---- 1. 入力ファイルのチェック ----
-	if not json_path.is_file():
-		print(f"❌ エラー: 入力JSONファイルが見つかりません: {json_path}", file=sys.stderr)
-		sys.exit(1)
-	if not noise_path.is_file():
-		print(f"❌ エラー: 雑音ファイルが見つかりません: {noise_path}", file=sys.stderr)
-		sys.exit(1)
 
-	print("✅ 入力ファイルのチェック完了。")
-	print(f"📖 JSON入力: {json_path}")
-	print(f"🔊 雑音ファイル: {noise_path}")
-	print(f"💾 出力先: {output_dir}")
+	def __init__(self, config):
+		self.config = config
+		self.room_dim_range = self.config.get('room_dim_range', ([3, 8], [3, 8], [2.5, 4]))
+		self.absorption_range = self.config.get('absorption_range', (0.1, 0.6))
+		self.fs = self.config.get('sample_rate', 16000)
+		self.output_dir = self.config.get('output_dir', 'dataset_speech_enhancement')
 
-	# ---- 2. データの読み込み ----
-	with open(json_path, 'r', encoding='utf-8') as f:
-		all_splits_info = json.load(f)
+		# 出力ディレクトリを作成
+		for sub_dir in ['clean', 'reverbe_only', 'noise_only', 'noise_reverb']:
+			os.makedirs(os.path.join(self.output_dir, sub_dir), exist_ok=True)
 
-	fs_noise, noise_signal = wavfile.read(noise_path)
-	# モノラルに変換
-	if noise_signal.ndim > 1:
-		noise_signal = noise_signal.mean(axis=1)
+	def generate_single_sample(self, clean_speech_path, noise_path, sample_id):
+		"""
+		1つのサンプルを生成し、保存する
+		"""
+		clean_speech, sr_clean = sf.read(clean_speech_path)
+		noise, sr_noise = sf.read(noise_path)
 
-	# ---- 3. データセット生成ループ ----
-	for split_name, speakers_data in all_splits_info.items():
-		print(f"\n======== {split_name.upper()} セットの処理を開始 ========")
+		# 部屋と音源・マイクのパラメータをランダムに決定
+		room_dim = [
+			random.uniform(self.room_dim_range[0][0], self.room_dim_range[0][1]),
+			random.uniform(self.room_dim_range[1][0], self.room_dim_range[1][1]),
+			random.uniform(self.room_dim_range[2][0], self.room_dim_range[2][1]),
+		]
+		absorption = random.uniform(self.absorption_range[0], self.absorption_range[1])
 
-		# tqdmを使って進捗バーを表示
-		file_list = []
-		for speaker_id, data in speakers_data.items():
-			for filepath in data["filepaths"]:
-				file_list.append((speaker_id, Path(filepath)))
+		# 共通の部屋オブジェクトを作成
+		room = pra.ShoeBox(room_dim, fs=self.fs, absorption=absorption)
 
-		for speaker_id, clean_filepath in tqdm(file_list, desc=f"Processing {split_name}"):
-			try:
-				# --- 3a. 音響環境をランダムに設定 ---
-				room_dim = [
-					random.uniform(*ROOM_DIM_RANGE['x']),
-					random.uniform(*ROOM_DIM_RANGE['y']),
-					random.uniform(*ROOM_DIM_RANGE['z'])
-				]
-				rt60_target = random.uniform(*RT60_RANGE)
-				snr_target = random.uniform(*SNR_RANGE)
+		# 音源とマイクを配置
+		mic_pos = np.array([[3.5], [3.5], [1.5]])
+		source_pos_speech = np.array([2, 3, 1.5])
+		source_pos_noise = np.array([5, 4, 1.5])
 
-				# Sabineの式から壁の吸収率と最大反射回数を計算
-				e_absorption, max_order = pra.inverse_sabine(rt60_target, room_dim)
+		room.add_microphone(mic_pos)
+		room.add_source(source_pos_speech, signal=clean_speech)
+		room.add_source(source_pos_noise, signal=noise)
 
-				# --- 3b. 部屋を作成 ---
-				room = pra.ShoeBox(
-					room_dim, fs=16000, materials=pra.Material(e_absorption), max_order=max_order
-				)
+		# クリーンな音声（教師信号）を保存
+		sf.write(os.path.join(self.output_dir, 'clean', f'sample_{sample_id:05d}.wav'), clean_speech, self.fs)
 
-				# --- 3c. 音源とマイクを配置 ---
-				fs_clean, clean_signal = wavfile.read(clean_filepath)
-				# サンプリングレートを部屋と合わせる（必要ならリサンプリング）
-				if fs_clean != room.fs:
-					# ここでは簡単化のためエラーとするが、実際はリサンプリング処理が望ましい
-					tqdm.write(f"⚠️  サンプリングレートが異なります: {clean_filepath.name} ({fs_clean}Hz)。スキップします。")
-					continue
+		# reverberant_only を作成
+		room.sources[1].set_gain(0)  # ノイズ源をミュート
+		room.simulate()
+		reverbe_only = room.mic_array.signals[0]
+		sf.write(os.path.join(self.output_dir, 'reverbe_only', f'sample_{sample_id:05d}.wav'), reverbe_only, self.fs)
 
-				# モノラルに変換
-				if clean_signal.ndim > 1:
-					clean_signal = clean_signal.mean(axis=1)
+		# noise_only を作成
+		room.sources[0].set_gain(0)  # 音源をミュート
+		room.sources[1].set_gain(1.0)  # ノイズ源のゲインを元に戻す
+		room.simulate()
+		noise_only = room.mic_array.signals[0]
+		sf.write(os.path.join(self.output_dir, 'noise_only', f'sample_{sample_id:05d}.wav'), noise_only, self.fs)
 
-				# 音源とマイクの位置をランダムに設定 (壁から20cmは離す)
-				mic_pos = room_dim // 2
-				doas = np.array([
-					[np.pi / 2., np.pi / 2],
-					[np.pi / 2., 0]
-				])  # 音源の方向[仰角, 方位角](ラジアン)
-				distance = [0.5, 0.7]  # 音源とマイクの距離(m)
-				source_pos = rec_util.set_souces_coordinate2(doas, distance, mic_pos)
+		# noise_reverb を作成
+		room.sources[0].set_gain(1.0)  # 音源のゲインを元に戻す
+		room.simulate()
+		noise_reverb = room.mic_array.signals[0]
+		sf.write(os.path.join(self.output_dir, 'noise_reverb', f'sample_{sample_id:05d}.wav'), noise_reverb, self.fs)
 
-				room.add_source(source_pos, signal=clean_signal)
-				room.add_microphone_array(pra.MicrophoneArray(mic_pos.reshape(-1, 1), room.fs))
+	def run(self):
+		"""
+		データセット生成のメイン処理
+		"""
+		# クリーンな音声ファイルとノイズファイルのリストを準備
+		clean_files = [os.path.join(self.config['clean_dir'], f) for f in os.listdir(self.config['clean_dir']) if
+					   f.endswith('.wav')]
+		noise_files = [os.path.join(self.config['noise_dir'], f) for f in os.listdir(self.config['noise_dir']) if
+					   f.endswith('.wav')]
 
-				# --- 3d. 雑音を追加 ---
-				# 雑音信号からランダムな箇所を切り出して使用
-				start = random.randint(0, len(noise_signal) - len(clean_signal))
-				noise_segment = noise_signal[start: start + len(clean_signal)]
+		for i in range(self.config.get('num_samples', 100)):
+			clean_file = random.choice(clean_files)
+			noise_file = random.choice(noise_files)
+			print(f"Generating sample {i + 1}...")
+			self.generate_single_sample(clean_file, noise_file, i)
 
-				room.add_source(source_pos, signal=noise_segment, snr=snr_target)
-
-				# --- 3e. シミュレーション実行 ---
-				# anechoic(clean), reverb, noisy(mic_array)のシグナルを分離して計算
-				room.sources[1].power = 0.  # 一時的にノイズをオフ
-				room.simulate(snr=None)  # snr=None でないと古い挙動になる
-				reverb_signal = room.mic_array.signals[0, :len(clean_signal)]
-
-				room.sources[1].power = 1.  # ノイズをオンに戻す
-				room.simulate(snr=snr_target)
-				noisy_signal = room.mic_array.signals[0, :len(clean_signal)]
-
-				# --- 3f. ファイルを保存 ---
-				# 出力ディレクトリを作成
-				output_sub_dir = output_dir / split_name / speaker_id
-				output_sub_dir.mkdir(parents=True, exist_ok=True)
-
-				base_filename = clean_filepath.stem
-
-				# 各ファイルを正規化して保存
-				def save_wav(path, signal, fs):
-					# floatを16-bit intに変換
-					signal_norm = signal / np.max(np.abs(signal)) * 0.9
-					wavfile.write(path, fs, (signal_norm * 32767).astype(np.int16))
-
-				save_wav(output_sub_dir / f"{base_filename}_clean.wav", clean_signal, fs_clean)
-				save_wav(output_sub_dir / f"{base_filename}_reverb.wav", reverb_signal, fs_clean)
-				save_wav(output_sub_dir / f"{base_filename}_noisy.wav", noisy_signal, fs_clean)
-
-			except Exception as e:
-				tqdm.write(f"❌ エラーが発生しました: {clean_filepath.name} ({e})")
-
-	print("\n🎉 全ての処理が完了しました。")
+		print("Dataset generation complete.")
 
 
-if __name__ == "__main__":
-	# コマンドライン引数の設定
-	parser = argparse.ArgumentParser(description="JSONファイルに基づき、音声に残響と雑音を付与するデータセットを生成します。")
-	parser.add_argument(
-		"--json_path", type=Path, default=DEFAULT_JSON_PATH,
-		help=f"入力となるJSONファイルのパス (デフォルト: {DEFAULT_JSON_PATH})"
-	)
-	parser.add_argument(
-		"--output_dir", type=Path, default=DEFAULT_OUTPUT_DIR,
-		help=f"生成したデータセットを保存するディレクトリ (デフォルト: {DEFAULT_OUTPUT_DIR})"
-	)
-	parser.add_argument(
-		"--noise_path", type=Path, default=DEFAULT_NOISE_PATH,
-		help=f"シミュレーションで使用する雑音ファイルのパス (デフォルト: {DEFAULT_NOISE_PATH})"
-	)
+if __name__ == '__main__':
+	# 設定を辞書で定義
+	generator_config = {
+		'clean_dir': 'path/to/clean_speech_data',  # クリーンな音声データのパス
+		'noise_dir': 'path/to/noise_data',  # ノイズデータのパス
+		'num_samples': 100,
+	}
 
-	args = parser.parse_args()
-
-	create_augmented_dataset(
-		json_path=args.json_path,
-		output_dir=args.output_dir,
-		noise_path=args.noise_path
-	)
+# クラスをインスタンス化して実行
+# `path/to/clean_speech_data` と `path/to/noise_data` は実際のパスに置き換えてください
+# generator = DatasetGenerator(generator_config)
+# generator.run()

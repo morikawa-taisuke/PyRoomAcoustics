@@ -16,7 +16,7 @@ from mymodule import my_func
 def serch_reverbe_sec(reverbe_sec, channel=1, angle=np.pi):
     reverbe = reverbe_sec
     cnt = 0
-    room_dim = np.r_[3.0, 3.0, 3.0]
+    room_dim = np.r_[5.0, 5.0, 5.0]
     """ 音源の読み込み """
     target_data = rec_util.load_wave_data(f"./mymodule/JA01F049.wav")
     noise_data = target_data
@@ -175,11 +175,11 @@ def recoding(wave_files, out_dir, snr, reverbe_sec, channel=1, is_split=False):
         """チャンネルごとにファイルを分けて保存する"""
         for i in range(num_channels):
             """ noise_reverberation """
-            mix_path = f"./{out_dir}/mix_split/{i + 1:02}ch/{i + 1:02}ch_{signal_name}_{noise_name}_{snr}db_{int(reverbe_sec * 10):02}sec.wav"
+            mix_path = f"./{out_dir}/mix_split/{i + 1:02}ch/{i + 1:02}ch_{signal_name}_{noise_name}_{snr}db_{int(reverbe_sec * 1000):02}msec.wav"
             rec_util.save_wave(result_mix[i, :] * np.iinfo(np.int16).max / 20.,
                                mix_path, sample_rate)
             """ reverberation_only """
-            reverbe_path = f"./{out_dir}/reverbe_split/{i + 1:02}ch/{i + 1:02}ch_{signal_name}_{int(reverbe_sec * 10):02}sec.wav"
+            reverbe_path = f"./{out_dir}/reverbe_split/{i + 1:02}ch/{i + 1:02}ch_{signal_name}_{int(reverbe_sec * 1000):02}msec.wav"
             rec_util.save_wave(result_mix[i, :] * np.iinfo(np.int16).max / 20.,
                                reverbe_path, sample_rate)
             """ noise_only """
@@ -193,12 +193,12 @@ def recoding(wave_files, out_dir, snr, reverbe_sec, channel=1, is_split=False):
     else:
         """ チャンネルをまとめて保存 """
         """ noise_reverberation """
-        mix_path = f"./{out_dir}/noise_reverberation/{signal_name}_{noise_name}_{snr}db_{int(reverbe_sec * 10):02}sec.wav"
+        mix_path = f"./{out_dir}/noise_reverberation/{signal_name}_{noise_name}_{snr}db_{int(reverbe_sec * 1000):02}msec.wav"
         result_mix = result_mix * np.iinfo(np.int16).max / 15  # スケーリング
         # print(f"result_mix.shape:{result_mix.shape}")
         rec_util.save_wave(result_mix, mix_path)  # 保存
         """ reverberation_only """
-        reverbe_path = f"./{out_dir}/reverberation_only/{signal_name}_{int(reverbe_sec * 10):02}sec.wav"
+        reverbe_path = f"./{out_dir}/reverberation_only/{signal_name}_{int(reverbe_sec * 1000):02}msec.wav"
         result_reverbe = result_reverbe * np.iinfo(np.int16).max / 15  # 全てのチャンネルを保存
         # print(f"result_reverbe.shape:{result_reverbe.shape}")               # 確認用
         rec_util.save_wave(result_reverbe, reverbe_path)  # 保存
@@ -257,7 +257,7 @@ def recoding2(wave_files, out_dir, snr, reverbe_sec, reverbe_par, channel=1, dis
     """ 音源のパラメータ """
     sample_rate = rec_conf.sampling_rate  # サンプリング周波数
     """ シミュレーションのパラメータ """
-    room_dim = np.r_[3.0, 3.0, 3.0]  # 部屋の大きさ[x,y,z](m)
+    room_dim = np.r_[5.0, 5.0, 5.0]  # 部屋の大きさ[x,y,z](m)
     num_sources = len(wave_data)  # シミュレーションで用いる音源数
     mic_center = room_dim / 2  # アレイマイクの中心[x,y,z](m)
     num_channels = channel  # マイクの個数(チャンネル数)
@@ -337,10 +337,10 @@ def recoding2(wave_files, out_dir, snr, reverbe_sec, reverbe_par, channel=1, dis
         """チャンネルごとにファイルを分けて保存する"""
         for i in range(num_channels):
             """ noise_reverberation """
-            mix_path = f"{out_dir}/split/noise_reverbe_split/{i + 1:02}ch/{i + 1:02}ch_{signal_name}_{noise_name}_{snr}db_{int(reverbe_sec * 10):02}sec.wav"
+            mix_path = f"{out_dir}/split/noise_reverbe_split/{i + 1:02}ch/{i + 1:02}ch_{signal_name}_{noise_name}_{snr}db_{int(reverbe_sec * 1000):02}msec.wav"
             rec_util.save_wave(result_mix[i, :], mix_path, sample_rate)
             """ reverberation_only """
-            reverbe_path = f"{out_dir}/split/reverbe_only_split/{i + 1:02}ch/{i + 1:02}ch_{signal_name}_{int(reverbe_sec * 10):02}sec.wav"
+            reverbe_path = f"{out_dir}/split/reverbe_only_split/{i + 1:02}ch/{i + 1:02}ch_{signal_name}_{int(reverbe_sec * 1000):02}msec.wav"
             rec_util.save_wave(result_reverbe[i, :], reverbe_path, sample_rate)
             """ noise_only """
             noise_path = f"{out_dir}/split/noise_only_split/{i + 1:02}ch/{i + 1:02}ch_{signal_name}_{noise_name}_{snr}db.wav"
@@ -351,12 +351,12 @@ def recoding2(wave_files, out_dir, snr, reverbe_sec, reverbe_par, channel=1, dis
     else:
         """ チャンネルをまとめて保存 """
         """ noise_reverberation """
-        mix_path = f"{out_dir}/noise_reverbe/{signal_name}_{noise_name}_{snr}db_{int(reverbe_sec * 10):02}sec_{angle_name}.wav"
+        mix_path = f"{out_dir}/noise_reverbe/{signal_name}_{noise_name}_{snr}db_{int(reverbe_sec * 1000):02}msec_{angle_name}.wav"
 
         # print(f"result_mix.shape:{result_mix.shape}")
         rec_util.save_wave(result_mix, mix_path)  # 保存
         """ reverberation_only """
-        reverbe_path = f"{out_dir}/reverbe_only/{signal_name}_{int(reverbe_sec * 10):02}sec_{angle_name}.wav"
+        reverbe_path = f"{out_dir}/reverbe_only/{signal_name}_{int(reverbe_sec * 1000):02}msec_{angle_name}.wav"
 
         # print(f"result_reverbe.shape:{result_reverbe.shape}")               # 確認用
         rec_util.save_wave(result_reverbe, reverbe_path)  # 保存
@@ -366,7 +366,7 @@ def recoding2(wave_files, out_dir, snr, reverbe_sec, reverbe_par, channel=1, dis
         # print(f"result_nosie.shape:{result_noise.shape}")               # 確認用
         rec_util.save_wave(result_noise, noise_path)  # 保存
         """ clean """
-        clean_path = f"{out_dir}/clean/{signal_name}_{noise_name}_{snr}db_{int(reverbe_sec * 10):02}sec_{angle_name}.wav"
+        clean_path = f"{out_dir}/clean/{signal_name}_{noise_name}_{snr}db_{int(reverbe_sec * 1000):02}msec_{angle_name}.wav"
         # print(f"result_clean.shape:{result_clean.shape}")               # 確認用
         rec_util.save_wave(result_clean, clean_path)  # 保存
 
@@ -449,43 +449,47 @@ if __name__ == "__main__":
     #                  [reverbe]*len(angle_list))
 
     # for reverbe in range(1, 6):
-    speech_type = "DEMAND"
+    speech_type = "speeker_DEMAND"
     noise_type = "hoth"
     # target_dir = "F:\\sound_data\\sample_data\\speech\\DEMAND"  # 目的信号のディレクトリ
-    target_dir = f"{const.SAMPLE_DATA_DIR}\\speech\\{speech_type}\\clean"  # 目的信号のディレクトリ
+    target_dir = f"{const.SAMPLE_DATA_DIR}/speech/{speech_type}/test"  # 目的信号のディレクトリ
     sub_dir_list = my_func.get_subdir_list(target_dir)
-    noise_path = f"{const.SAMPLE_DATA_DIR}\\noise\\{noise_type}.wav"  # 雑音信号のディレクトリ
-    snr = 5  # SNR [dB]
+    print(sub_dir_list)
+    noise_path = f"{const.SAMPLE_DATA_DIR}/noise/{noise_type}.wav"  # 雑音信号のディレクトリ
+    snr = 10  # SNR [dB]
     # reverbe = 5  # 残響 [sec]
     ch = 1  # マイク数 [ch]
     distance = 0   # マイクの間隔 [cm]
     # for reverbe in range(1, 5+1):
     #for angle, angle_name in zip(angle_list, angle_name_list):
-    reverbe = 5
+    reverbe = 0.5
     # angle_name = "00dig"
     angle = math.radians(0)
     out_dir = f"{const.MIX_DATA_DIR}\\{speech_type}_{noise_type}_{snr:02}{snr:02}dB_{reverbe:02}sec_{ch}ch_{distance}cm\\"
     print("out_dir", out_dir)
 
     """録音(シミュレーション)"""
-    reverbe_par_json = f"{const.MIX_DATA_DIR}\\reverbe_condition\\{reverbe:02}sec_{ch}ch_{distance}cm.json"
-    if not os.path.isfile(reverbe_par_json):
-        reverbe_par = serch_reverbe_sec(reverbe_sec=reverbe*0.1, channel=ch)  # 任意の残響になるようなパラメータを求める
-        json_data = {"reverbe_par": reverbe_par}
-        """ 出力先のディレクトリの確認 """
-        my_func.exists_dir(my_func.get_dirname(reverbe_par_json))
-        with open(reverbe_par_json, "w") as json_file:
-            json.dump(json_data, json_file, indent=4)
-    else:
-        print("json_path:", reverbe_par_json)
-        with open(reverbe_par_json, "r") as json_file:
-            json_data = json.load(json_file)
-            reverbe_par = json_data["reverbe_par"]
-        # print("b")
+    # reverbe_par_json = f"{const.MIX_DATA_DIR}\\reverbe_condition\\{reverbe:02}sec_{ch}ch_{distance}cm.json"
+    # if not os.path.isfile(reverbe_par_json):
+    #     reverbe_par = serch_reverbe_sec(reverbe_sec=reverbe*0.1, channel=ch)  # 任意の残響になるようなパラメータを求める
+    #     json_data = {"reverbe_par": reverbe_par}
+    #     """ 出力先のディレクトリの確認 """
+    #     my_func.exists_dir(my_func.get_dirname(reverbe_par_json))
+    #     with open(reverbe_par_json, "w") as json_file:
+    #         json.dump(json_data, json_file, indent=4)
+    # else:
+    #     print("json_path:", reverbe_par_json)
+    #     with open(reverbe_par_json, "r") as json_file:
+    #         json_data = json.load(json_file)
+    #         reverbe_par = json_data["reverbe_par"]
+    # #     # print("b")
 
+    # reverbe_par = serch_reverbe_sec(reverbe_sec=reverbe * 0.1, channel=ch)  # 任意の残響になるようなパラメータを求める
+    reverbe_par = pa.inverse_sabine(reverbe, [5., 5., 5.])  # Sabineの残響式から壁の吸収率と反射上限回数を決定
     for sub_dir in sub_dir_list:
         """音声ファイルリストの作成"""
         target_list = my_func.get_file_list(os.path.join(target_dir, sub_dir))
+        # target_list = ["/Users/a/Documents/python/PyRoomAcoustics/mymodule/p257_433.wav"]
         print(f"len:{len(target_list)}")
         for target_file in tqdm(target_list):
             wave_file = []
@@ -494,11 +498,11 @@ if __name__ == "__main__":
 
             """録音(シミュレーション)"""
             recoding2(wave_files=wave_file,
-                      out_dir=os.path.join(out_dir, sub_dir),
+                      out_dir=f"{const.MIX_DATA_DIR}/DEMAND_hoth_05dB_500msec/test",
                       snr=snr,
                       reverbe_sec=reverbe*0.1,
                       reverbe_par=reverbe_par,
                       channel=ch,
                       angle=angle)
-    end = time.time()
-    print(f"time:{(end - start) / 60:.2f}min")
+        end = time.time()
+        print(f"time:{(end - start) / 60:.2f}min")
