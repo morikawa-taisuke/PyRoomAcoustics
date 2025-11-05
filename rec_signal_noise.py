@@ -175,11 +175,11 @@ def recoding(wave_files, out_dir, snr, reverbe_sec, channel=1, is_split=False):
         """チャンネルごとにファイルを分けて保存する"""
         for i in range(num_channels):
             """ noise_reverberation """
-            mix_path = f"./{out_dir}/mix_split/{i + 1:02}ch/{i + 1:02}ch_{signal_name}_{noise_name}_{snr}db_{int(reverbe_sec * 10):02}sec.wav"
+            mix_path = f"./{out_dir}/mix_split/{i + 1:02}ch/{i + 1:02}ch_{signal_name}_{noise_name}_{snr}db_{int(reverbe_sec * 1000):02}msec.wav"
             rec_util.save_wave(result_mix[i, :] * np.iinfo(np.int16).max / 20.,
                                mix_path, sample_rate)
             """ reverberation_only """
-            reverbe_path = f"./{out_dir}/reverbe_split/{i + 1:02}ch/{i + 1:02}ch_{signal_name}_{int(reverbe_sec * 10):02}sec.wav"
+            reverbe_path = f"./{out_dir}/reverbe_split/{i + 1:02}ch/{i + 1:02}ch_{signal_name}_{int(reverbe_sec * 1000):02}msec.wav"
             rec_util.save_wave(result_mix[i, :] * np.iinfo(np.int16).max / 20.,
                                reverbe_path, sample_rate)
             """ noise_only """
@@ -193,12 +193,12 @@ def recoding(wave_files, out_dir, snr, reverbe_sec, channel=1, is_split=False):
     else:
         """ チャンネルをまとめて保存 """
         """ noise_reverberation """
-        mix_path = f"./{out_dir}/noise_reverberation/{signal_name}_{noise_name}_{snr}db_{int(reverbe_sec * 10):02}sec.wav"
+        mix_path = f"./{out_dir}/noise_reverberation/{signal_name}_{noise_name}_{snr}db_{int(reverbe_sec * 1000):02}msec.wav"
         result_mix = result_mix * np.iinfo(np.int16).max / 15  # スケーリング
         # print(f"result_mix.shape:{result_mix.shape}")
         rec_util.save_wave(result_mix, mix_path)  # 保存
         """ reverberation_only """
-        reverbe_path = f"./{out_dir}/reverberation_only/{signal_name}_{int(reverbe_sec * 10):02}sec.wav"
+        reverbe_path = f"./{out_dir}/reverberation_only/{signal_name}_{int(reverbe_sec * 1000):02}msec.wav"
         result_reverbe = result_reverbe * np.iinfo(np.int16).max / 15  # 全てのチャンネルを保存
         # print(f"result_reverbe.shape:{result_reverbe.shape}")               # 確認用
         rec_util.save_wave(result_reverbe, reverbe_path)  # 保存
@@ -337,10 +337,10 @@ def recoding2(wave_files, out_dir, snr, reverbe_sec, reverbe_par, channel=1, dis
         """チャンネルごとにファイルを分けて保存する"""
         for i in range(num_channels):
             """ noise_reverberation """
-            mix_path = f"{out_dir}/split/noise_reverbe_split/{i + 1:02}ch/{i + 1:02}ch_{signal_name}_{noise_name}_{snr}db_{int(reverbe_sec * 10):02}sec.wav"
+            mix_path = f"{out_dir}/split/noise_reverbe_split/{i + 1:02}ch/{i + 1:02}ch_{signal_name}_{noise_name}_{snr}db_{int(reverbe_sec * 1000):02}msec.wav"
             rec_util.save_wave(result_mix[i, :], mix_path, sample_rate)
             """ reverberation_only """
-            reverbe_path = f"{out_dir}/split/reverbe_only_split/{i + 1:02}ch/{i + 1:02}ch_{signal_name}_{int(reverbe_sec * 10):02}sec.wav"
+            reverbe_path = f"{out_dir}/split/reverbe_only_split/{i + 1:02}ch/{i + 1:02}ch_{signal_name}_{int(reverbe_sec * 1000):02}msec.wav"
             rec_util.save_wave(result_reverbe[i, :], reverbe_path, sample_rate)
             """ noise_only """
             noise_path = f"{out_dir}/split/noise_only_split/{i + 1:02}ch/{i + 1:02}ch_{signal_name}_{noise_name}_{snr}db.wav"
@@ -351,12 +351,12 @@ def recoding2(wave_files, out_dir, snr, reverbe_sec, reverbe_par, channel=1, dis
     else:
         """ チャンネルをまとめて保存 """
         """ noise_reverberation """
-        mix_path = f"{out_dir}/noise_reverbe/{signal_name}_{noise_name}_{snr}db_{int(reverbe_sec * 10):02}sec_{angle_name}.wav"
+        mix_path = f"{out_dir}/noise_reverbe/{signal_name}_{noise_name}_{snr}db_{int(reverbe_sec * 1000):02}msec_{angle_name}.wav"
 
         # print(f"result_mix.shape:{result_mix.shape}")
         rec_util.save_wave(result_mix, mix_path)  # 保存
         """ reverberation_only """
-        reverbe_path = f"{out_dir}/reverbe_only/{signal_name}_{int(reverbe_sec * 10):02}sec_{angle_name}.wav"
+        reverbe_path = f"{out_dir}/reverbe_only/{signal_name}_{int(reverbe_sec * 1000):02}msec_{angle_name}.wav"
 
         # print(f"result_reverbe.shape:{result_reverbe.shape}")               # 確認用
         rec_util.save_wave(result_reverbe, reverbe_path)  # 保存
@@ -366,7 +366,7 @@ def recoding2(wave_files, out_dir, snr, reverbe_sec, reverbe_par, channel=1, dis
         # print(f"result_nosie.shape:{result_noise.shape}")               # 確認用
         rec_util.save_wave(result_noise, noise_path)  # 保存
         """ clean """
-        clean_path = f"{out_dir}/clean/{signal_name}_{noise_name}_{snr}db_{int(reverbe_sec * 10):02}sec_{angle_name}.wav"
+        clean_path = f"{out_dir}/clean/{signal_name}_{noise_name}_{snr}db_{int(reverbe_sec * 1000):02}msec_{angle_name}.wav"
         # print(f"result_clean.shape:{result_clean.shape}")               # 確認用
         rec_util.save_wave(result_clean, clean_path)  # 保存
 
