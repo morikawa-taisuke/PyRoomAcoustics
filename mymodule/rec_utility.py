@@ -6,8 +6,7 @@ import math
 import random
 import pyroomacoustics as pa
 
-from mymodule import my_func
-from mymodule import rec_config as rec_conf
+from mymodule import my_func, rec_config as rec_conf, reverbe_feater as rev_feat
 
 
 def set_mic_coordinate(center, num_channels, distance):
@@ -303,7 +302,7 @@ def search_reverb_sec(reverb_sec, channel=1, angle=np.pi):
         room.simulate() # シミュレーション
         rt60 = room.measure_rt60()  # 残響時間の取得
         round_rt60 = round(np.mean(rt60), 3)    # 有効数字3桁で丸める
-        if round_rt60 >= reverbe_sec:   #
+        if round_rt60 >= reverb_sec:   #
             break
         cnt += 1
         reverbe += 0.01
@@ -311,6 +310,114 @@ def search_reverb_sec(reverb_sec, channel=1, angle=np.pi):
     print(f"max_order:{max_order}\ne_absorption:{e_absorption}")
     print(f"rt60={np.mean(rt60)}")
     return e_absorption, max_order
+
+
+def create_random_room_shoebox(
+        room_dim_range=((3, 8), (3, 8), (2.5, 4)),
+        rt60_range=(0.1, 1.0),
+        fs=16000
+):
+    """
+    ランダムなパラメータでShoeBoxルームを作成する
+    (new_signal_noise.pyから切り出し)
+
+    Args:
+        room_dim_range (tuple): (x_range, y_range, z_range)
+        rt60_range (tuple): (min, max)
+        fs (int): サンプリング周波数
+
+    Returns:
+        tuple: (room, room_dim, rt60_target, e_absorption, max_order)
+    """
+    # ランダムな部屋のパラメータを生成
+    room_dim = np.array([
+        random.uniform(room_dim_range[0][0], room_dim_range[0][1]),
+        random.uniform(room_dim_range[1][0], room_dim_range[1][1]),
+        random.uniform(room_dim_range[2][0], room_dim_range[2][1])
+    ])
+
+    # Sabineの残響式から吸収率と反射上限回数を決定
+    rt60_target = random.uniform(rt60_range[0], rt60_range[1])
+    e_absorption, max_order = pa.inverse_sabine(rt60_target, room_dim)
+
+    # 部屋の作成
+    room = pa.ShoeBox(
+        room_dim,
+        fs=fs,
+        max_order=max_order,
+        materials=pa.Material(e_absorption)
+    )
+
+    return room, room_dim, rt60_target, e_absorption, max_order
+
+
+def compute_rir_and_features(room, mic_coordinate, source_pos_signal, source_pos_noise):
+    """
+    部屋にマイクと音源を設置し、RIRと音響特徴量を計算する
+    (new_signal_noise.pyから切り出し)
+
+    Args:
+        room (pa.ShoeBox): pyroomacoustics の room オブジェクト
+        mic_coordinate (np.ndarray): マイク座標
+        source_pos_signal (np.ndarray): 目的音源の座標
+        source_pos_noise (np.ndarray): 雑音音源の座標
+
+    Returns:
+        tuple: (rir_signal, rir_noise, rt60, c50, d50)
+    """
+    # マイクの設置
+    room.add_microphone_array(pa.MicrophoneArray(mic_coordinate, fs=room.fs))
+
+    # 音源の追加
+    room.add_source(source_pos_signal)
+    room.add_source(source_pos_noise)
+
+    # RIRを計算
+    room.compute_rir()
+
+    # RIRは (マイク, 音源) のリストで返る
+    # マイク0, 音源0 (目的信号)
+    rir_signal = room.rir[0][0]
+    # マイク0, 音源1 (雑音)
+    rir_noise = room.rir[0][1]
+
+    # 物理的特徴量（RT60, C50, D50）を計算
+    # 目的信号のRIR (マイク0, 音源0) を使用
+    rt60 = room.measure_rt60()[0][0]
+    c50 = rev_feat.calculate_c50(rir_signal, fs=room.fs)
+    d50 = rev_feat.calculate_d50(rir_signal, fs=room.fs)
+
+    return rir_signal, rir_noise, rt60, c50, d50
+
+
+def convolve_and_mix(clean_signal, noise_segment, rir_signal, rir_noise, snr):
+    """
+    各信号とRIRを畳み込み、指定したSNRで混合する
+    (new_signal_noise.pyから切り出し)
+
+    Args:
+        clean_signal (np.ndarray): モノラルクリーン音声 (N,)
+        noise_segment (np.ndarray): モノラル雑音 (N,)
+        rir_signal (np.ndarray): 目的信号用RIR
+        rir_noise (np.ndarray): 雑音用RIR
+        snr (float): 混合SNR [dB]
+
+    Returns:
+        np.ndarray: 混合後の音声信号 (M,)
+    """
+    # RIRで畳み込み、残響付き信号を生成
+    reverb_signal = np.convolve(clean_signal, rir_signal, mode='full')[:len(clean_signal)]
+    reverb_noise = np.convolve(noise_segment, rir_noise, mode='full')[:len(noise_segment)]
+
+    # SNRを調整して結合
+    # get_scale_noise は rec_utility.py に既に存在する関数
+    scaled_noise = get_scale_noise(reverb_signal, reverb_noise, snr)
+    mixed_signal = reverb_signal + scaled_noise
+
+    return mixed_signal
+
+
+# ----------------------------------------------------
 
 
 if __name__ == "__main__":
