@@ -43,7 +43,7 @@ def clean(speech_dir, ir_path, output_dir):
     speech_files = my_func.get_file_list(speech_dir)
 
     print("-"*32)
-    print(f"speech_dir({len(speech_files)}): {speech_dir}")
+    print(f"speech_type({len(speech_files)}): {speech_dir}")
     print(f"ir_dir: {ir_path}")
     print(f"output_dir: {output_dir}")
     print("-"*32)
@@ -65,7 +65,7 @@ def clean(speech_dir, ir_path, output_dir):
 
 def noise_reverbe(speech_dir, noise_dir, ir_path, output_dir):
     print("-"*32)
-    print(f"speech_dir: {speech_dir}")
+    print(f"speech_type: {speech_dir}")
     print(f"noise_dir: {noise_dir}")
     print(f"ir_dir: {ir_path}")
     print(f"output_dir: {output_dir}")
@@ -107,7 +107,7 @@ def noise_reverbe(speech_dir, noise_dir, ir_path, output_dir):
 
 def reverbe_only(speech_dir, ir_path, output_dir):
     print("-"*32)
-    print(f"speech_dir: {speech_dir}")
+    print(f"speech_type: {speech_dir}")
     print(f"ir_dir: {ir_path}")
     print(f"output_dir: {output_dir}")
     print("-"*32)
@@ -133,7 +133,7 @@ def reverbe_only(speech_dir, ir_path, output_dir):
 
 def noise_only(speech_dir, noise_dir, ir_path, output_dir):
     print("-"*32)
-    print(f"speech_dir: {speech_dir}")
+    print(f"speech_type: {speech_dir}")
     print(f"noise_dir: {noise_dir}")
     print(f"ir_dir: {ir_path}")
     print(f"output_dir: {output_dir}")
@@ -176,7 +176,7 @@ def noise_only(speech_dir, noise_dir, ir_path, output_dir):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='CSVに従い音声データを処理')
     parser.add_argument('--csv_path', type=str, help='csvファイルのパス')
-    parser.add_argument('--speech_dir', type=str, help='speechデータのディレクトリ')
+    parser.add_argument('--speech_type', type=str, help='speechデータのディレクトリ')
     parser.add_argument('--noise_dir', type=str, help='noiseデータのディレクトリ')
     parser.add_argument('--ir_dir', type=str, help='IRのディレクトリ')
     parser.add_argument('--output_dir', type=str, help='出力先ディレクトリ')
@@ -192,7 +192,7 @@ if __name__ == '__main__':
         ir_dir = [f"{const.SAMPLE_DATA_DIR}/IR/1ch_0cm_liner/clean/speech/050sec.wav",
                   f"{const.SAMPLE_DATA_DIR}/IR/1ch_0cm_liner/clean/noise/050sec_000dig.wav"]
         # output_dir =  f"{const.MIX_DATA_DIR}/{out_dir_name}/{test_train}/clean"
-        # clean(speech_dir, ir_dir, output_dir)
+        # clean(speech_type, ir_dir, output_dir)
         
         # noise_only
         noise_dir = f"{const.SAMPLE_DATA_DIR}/noise/hoth.wav"
