@@ -173,56 +173,6 @@ def get_shape(data):
     else:
         return []  # Assuming leaf elements are considered as a single column
 
-def serch_reverbe_sec(reverbe_sec, channel=1, angle=np.pi):
-    reverbe = reverbe_sec
-    cnt = 0
-    room_dim = np.r_[10.0, 7.0, 3.0]
-    """ 音源の読み込み """
-    target_data = rec_util.load_wave_data(f"./mymodule/JA01F049.wav")
-    noise_data = target_data
-    wave_data = []  # 1つの配列に格納
-    wave_data.append(target_data)
-    wave_data.append(noise_data)
-    mic_center = np.r_[3.0, 3.0, 1.2]  # アレイマイクの中心[x,y,z](m)
-    num_channels = channel  # マイクの個数(チャンネル数)
-    distance = 0.1  # 各マイクの間隔(m)
-    mic_codinate = rec_util.set_mic_coordinate(center=mic_center,
-                                               num_channels=num_channels,
-                                               distance=distance)  # 各マイクの座標
-    doas = np.array([
-        [np.pi/2., np.pi/2],
-        [np.pi/2., angle]
-    ])  # 音源の方向[仰角, 方位角](ラジアン)
-    distance = [0.5, 0.7]  # 音源とマイクの距離(m)
-
-    max_order = 0   # 初期化
-    e_absorption = 0    # 初期化
-    rt60 = 0    # 初期化
-    while cnt < 100:   # 試行回数が100以上の時にループを抜ける
-        e_absorption, max_order = pa.inverse_sabine(reverbe, room_dim)  # Sabineの残響式から壁の吸収率と反射上限回数を決定
-        room = pa.ShoeBox(room_dim, fs=rec_conf.sampling_rate, max_order=max_order, absorption=e_absorption)    # 部屋の作成
-
-        """ 部屋にマイクを設置 """
-        room.add_microphone_array(pa.MicrophoneArray(mic_codinate, fs=room.fs))
-        """ 各音源の座標 """
-        source_codinate = rec_util.set_souces_coordinate2(doas, distance, mic_center)
-        """ 各音源を部屋に追加する """
-        for idx in range(2):
-            wave_data[idx] /= np.std(wave_data[idx])
-            room.add_source(source_codinate[:, idx], signal=wave_data[idx])
-
-        room.simulate() # シミュレーション
-        rt60 = room.measure_rt60()  # 残響時間の取得
-        round_rt60 = round(np.mean(rt60), 3)    # 有効数字3桁で丸める
-        if round_rt60 >= reverbe_sec:   #
-            break
-        cnt += 1
-        reverbe += 0.01
-    # print(f"[{cnt}]rt60:{np.mean(rt60)}")
-    print(f"max_order:{max_order}\ne_absorption:{e_absorption}")
-    print(f"rt60={np.mean(rt60)}")
-    return e_absorption, max_order
-
 
 if __name__ == "__main__":
     print("generate_IR")

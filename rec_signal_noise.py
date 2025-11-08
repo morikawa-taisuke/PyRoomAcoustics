@@ -13,57 +13,6 @@ from mymodule import const, rec_config as rec_conf, rec_utility as rec_util
 from mymodule import my_func
 
 
-def serch_reverbe_sec(reverbe_sec, channel=1, angle=np.pi):
-    reverbe = reverbe_sec
-    cnt = 0
-    room_dim = np.r_[5.0, 5.0, 5.0]
-    """ 音源の読み込み """
-    target_data = rec_util.load_wave_data(f"./mymodule/JA01F049.wav")
-    noise_data = target_data
-    wave_data = []  # 1つの配列に格納
-    wave_data.append(target_data)
-    wave_data.append(noise_data)
-    mic_center = room_dim / 2  # アレイマイクの中心[x,y,z](m)
-    num_channels = channel  # マイクの個数(チャンネル数)
-    distance = 0.1  # 各マイクの間隔(m)
-    mic_codinate = rec_util.set_mic_coordinate(center=mic_center,
-                                               num_channels=num_channels,
-                                               distance=distance)  # 各マイクの座標
-    doas = np.array([
-        [np.pi / 2., np.pi / 2],
-        [np.pi / 2., angle]
-    ])  # 音源の方向[仰角, 方位角](ラジアン)
-    distance = [0.5, 0.7]  # 音源とマイクの距離(m)
-
-    max_order = 0  # 初期化
-    e_absorption = 0  # 初期化
-    rt60 = 0  # 初期化
-    while cnt < 100:  # 試行回数が100以上の時にループを抜ける
-        e_absorption, max_order = pa.inverse_sabine(reverbe, room_dim)  # Sabineの残響式から壁の吸収率と反射上限回数を決定
-        room = pa.ShoeBox(room_dim, fs=rec_conf.sampling_rate, max_order=max_order, absorption=e_absorption)  # 部屋の作成
-
-        """ 部屋にマイクを設置 """
-        room.add_microphone_array(pa.MicrophoneArray(mic_codinate, fs=room.fs))
-        """ 各音源の座標 """
-        source_codinate = rec_util.set_souces_coordinate2(doas, distance, mic_center)
-        """ 各音源を部屋に追加する """
-        for idx in range(2):
-            wave_data[idx] /= np.std(wave_data[idx])
-            room.add_source(source_codinate[:, idx], signal=wave_data[idx])
-
-        room.simulate()  # シミュレーション
-        rt60 = room.measure_rt60()  # 残響時間の取得
-        round_rt60 = round(np.mean(rt60), 3)  # 有効数字3桁で丸める
-        if round_rt60 >= reverbe_sec:  #
-            break
-        cnt += 1
-        reverbe += 0.01
-    # print(f"[{cnt}]rt60:{np.mean(rt60)}")
-    print(f"max_order:{max_order}\ne_absorption:{e_absorption}")
-    print(f"rt60={np.mean(rt60)}")
-    return e_absorption, max_order
-
-
 def recoding(wave_files, out_dir, snr, reverbe_sec, channel=1, is_split=False):
     """ シミュレーションを用いた録音
 
@@ -110,7 +59,7 @@ def recoding(wave_files, out_dir, snr, reverbe_sec, channel=1, is_split=False):
     num_sources = len(wave_data)  # シミュレーションで用いる音源数
     reverberation = reverbe_sec  # 残響時間(sec)
     # e_absorption, max_order = pa.inverse_sabine(reverberation, room_dim)  # Sabineの残響式から壁の吸収率と反射上限回数を決定
-    e_absorption, max_order = serch_reverbe_sec(reverbe_sec=reverberation)
+    e_absorption, max_order = rec_util.search_reverb_sec(reverbe_sec=reverberation)
     mic_center = room_dim / 2  # アレイマイクの中心[x,y,z](m)
     num_channels = channel  # マイクの個数(チャンネル数)
     distance = 0.1  # 各マイクの間隔(m)
@@ -387,7 +336,7 @@ def process_recoding_thread(angle, angle_name, reverbe_sec=5):
     reverbe_par_json = f"{const.MIX_DATA_DIR}\\reverbe_condition\\{reverbe_sec:02}sec_{ch}ch_{angle_name}.json"
     # reverbe_par_json = f"{const.MIX_DATA_DIR}\\reverbe_condition\\{reverbe_sec:02}sec_{ch}ch_{distance}cm_{angle_name}.json"
     if not os.path.isfile(reverbe_par_json):
-        reverbe_par = serch_reverbe_sec(reverbe_sec=reverbe_sec, channel=ch, angle=angle)  # 任意の残響になるようなパラメータを求める
+        reverbe_par = rec_util.search_reverb_sec(reverbe_sec=reverbe_sec, channel=ch, angle=angle)  # 任意の残響になるようなパラメータを求める
         json_data = {"reverbe_par": reverbe_par}
         """ 出力先のディレクトリの確認 """
         my_func.exists_dir(my_func.get_dirname(reverbe_par_json))
