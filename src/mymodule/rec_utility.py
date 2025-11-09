@@ -6,7 +6,7 @@ import math
 import random
 import pyroomacoustics as pa
 
-from mymodule import reverbe_feater as rev_feat, my_func, rec_config as rec_conf
+from mymodule import reverb_feater as rev_feat, my_func, rec_config as rec_conf
 
 
 def set_mic_coordinate(center, num_channels, distance):
@@ -262,7 +262,7 @@ def exists_dir(dir_path):
 
 
 def search_reverb_sec(reverb_sec, channel=1, angle=np.pi):
-    reverbe = reverb_sec
+    reverb = reverb_sec
     cnt = 0
     room_dim = np.r_[10.0, 7.0, 3.0]
     """ 音源の読み込み """
@@ -287,7 +287,7 @@ def search_reverb_sec(reverb_sec, channel=1, angle=np.pi):
     e_absorption = 0    # 初期化
     rt60 = 0    # 初期化
     while cnt < 100:   # 試行回数が100以上の時にループを抜ける
-        e_absorption, max_order = pa.inverse_sabine(reverbe, room_dim)  # Sabineの残響式から壁の吸収率と反射上限回数を決定
+        e_absorption, max_order = pa.inverse_sabine(reverb, room_dim)  # Sabineの残響式から壁の吸収率と反射上限回数を決定
         room = pa.ShoeBox(room_dim, fs=rec_conf.sampling_rate, max_order=max_order, absorption=e_absorption)    # 部屋の作成
 
         """ 部屋にマイクを設置 """
@@ -305,7 +305,7 @@ def search_reverb_sec(reverb_sec, channel=1, angle=np.pi):
         if round_rt60 >= reverb_sec:   #
             break
         cnt += 1
-        reverbe += 0.01
+        reverb += 0.01
     # print(f"[{cnt}]rt60:{np.mean(rt60)}")
     print(f"max_order:{max_order}\ne_absorption:{e_absorption}")
     print(f"rt60={np.mean(rt60)}")

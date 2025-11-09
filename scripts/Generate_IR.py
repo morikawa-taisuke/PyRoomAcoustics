@@ -10,21 +10,21 @@ import soundfile as sf
 from mymodule import const, my_func, rec_config as rec_conf, rec_utility as rec_util
 
 
-def IR_speech(out_dir, reverbe_sec, reverbe_par, channel=1, distance=0, is_line=False):
+def IR_speech(out_dir, reverb_sec, reverb_par, channel=1, distance=0, is_line=False):
     """ シミュレーションを用いた録音 (部屋のパラメータを計算済み)
 
     Args:
         wave_files: シミュレーションで使用する音声([目的音声,雑音]) [0]:目的音声　[1]:雑音
         out_dir: 出力先のディレクトリ
         snr: 雑音と原音のSNR
-        reverbe_par: serch_reverbe_secによって決定した部屋のパラメータ
+        reverb_par: serch_reverb_secによって決定した部屋のパラメータ
         channel: チャンネル数
         is_split: Ture=チャンネルごとにファイルを分ける False=すべてのチャンネルを1つのファイルにまとめる
 
     Returns:
         None
     """
-    # print(f"reverbe: {reverbe_sec: 03}")
+    # print(f"reverb: {reverb_sec: 03}")
     num_sources = 1
 
     """ 音源のパラメータ """
@@ -47,55 +47,55 @@ def IR_speech(out_dir, reverbe_sec, reverbe_par, channel=1, distance=0, is_line=
     distance = [0.5, 0.7]  # 音源とマイクの距離(m)
 
     """ 部屋の生成 """
-    room_reverbe = pa.ShoeBox(room_dim, fs=sample_rate, max_order=reverbe_par[1], absorption=reverbe_par[0])  # 残響のみ
+    room_reverb = pa.ShoeBox(room_dim, fs=sample_rate, max_order=reverb_par[1], absorption=reverb_par[0])  # 残響のみ
     room_clean = pa.ShoeBox(room_dim, fs=sample_rate, max_order=0, absorption=1.0)  # 教師信号
 
     """ 部屋にマイクを設置 """
-    room_reverbe.add_microphone_array(pa.MicrophoneArray(mic_coordinate, fs=room_reverbe.fs))
+    room_reverb.add_microphone_array(pa.MicrophoneArray(mic_coordinate, fs=room_reverb.fs))
     room_clean.add_microphone_array(pa.MicrophoneArray(mic_coordinate, fs=room_clean.fs))
 
     """ 各音源の座標 """
     source_coordinate = rec_util.set_souces_coordinate2(doas, distance, mic_center)
 
     """ 各音源を部屋に追加する """
-    room_reverbe.add_source(source_coordinate)
+    room_reverb.add_source(source_coordinate)
     room_clean.add_source(source_coordinate)
 
     """ インパルス応答を取得する [ チャンネル, マイク, サンプル ] """
-    room_reverbe.compute_rir()
+    room_reverb.compute_rir()
     room_clean.compute_rir()
 
     """ インパルス応答の波形データを保存 """
-    ir_reverbe = room_reverbe.rir
+    ir_reverb = room_reverb.rir
     ir_clean = room_clean.rir
-    # print("ir_reverbe.shape: ", len(ir_reverbe[0][0]))
-    ir_reverbe = ir_reverbe[0][0]
+    # print("ir_reverb.shape: ", len(ir_reverb[0][0]))
+    ir_reverb = ir_reverb[0][0]
     ir_clean = ir_clean[0][0]
 
     """ 正規化の確認 """
-    ir_reverbe /= np.max(np.abs(ir_reverbe))  # 可視化のため正規化
+    ir_reverb /= np.max(np.abs(ir_reverb))  # 可視化のため正規化
     ir_clean /= np.max(np.abs(ir_clean))  # 可視化のため正規化
 
     """ 畳み込んだ波形をファイルに書き込む """
     """ チャンネルをまとめて保存 """
-    """ reverberation_only """
-    # print(f"ir_reverbe.shape:{ir_reverbe.shape}")               # 確認用
-    reverbe_path = f"{out_dir}/reverbe_only/speech/{reverbe_sec:03}sec.wav"
-    my_func.exists_dir(reverbe_path)
-    sf.write(reverbe_path, ir_reverbe, sample_rate)
+    """ reverbration_only """
+    # print(f"ir_reverb.shape:{ir_reverb.shape}")               # 確認用
+    reverb_path = f"{out_dir}/reverb_only/speech/{reverb_sec:03}sec.wav"
+    my_func.exists_dir(reverb_path)
+    sf.write(reverb_path, ir_reverb, sample_rate)
     """ clean """
     # print(f"ir_clean.shape:{ir_clean.shape}")               # 確認用
-    clean_path = f"{out_dir}/clean/speech/{reverbe_sec:03}sec.wav"
+    clean_path = f"{out_dir}/clean/speech/{reverb_sec:03}sec.wav"
     my_func.exists_dir(clean_path)
     sf.write(clean_path, ir_clean, sample_rate)
 
-def IR_noise(out_dir, reverbe_sec, reverbe_par, channel=1, distance=0, angle=np.pi, angle_name: str = "None",
+def IR_noise(out_dir, reverb_sec, reverb_par, channel=1, distance=0, angle=np.pi, angle_name: str = "None",
            is_line=False):
     """ 雑音を部屋に配置し，各マイクのインパルス応答を出力
 
     :param out_dir: 出力先 (推奨：絶対パス)
-    :param reverbe_sec: 残響時間 ( Rt60 )
-    :param reverbe_par: 部屋のパラメータ [壁の吸収率, 最大反射回数]
+    :param reverb_sec: 残響時間 ( Rt60 )
+    :param reverb_par: 部屋のパラメータ [壁の吸収率, 最大反射回数]
     :param channel: マイク数 (チャンネル数)
     :param distance: マイク間隔
     :param angle: 雑音の角度 (水平角)
@@ -125,44 +125,44 @@ def IR_noise(out_dir, reverbe_sec, reverbe_par, channel=1, distance=0, angle=np.
     distance = [0.7]  # 音源とマイクの距離(m)
 
     """ 部屋の生成 """
-    room_reverbe = pa.ShoeBox(room_dim, fs=sample_rate, max_order=reverbe_par[1], absorption=reverbe_par[0])  # 残響あり
+    room_reverb = pa.ShoeBox(room_dim, fs=sample_rate, max_order=reverb_par[1], absorption=reverb_par[0])  # 残響あり
     room_clean = pa.ShoeBox(room_dim, fs=sample_rate, max_order=0, absorption=1.0)  # 残響なし
 
     """ 部屋にマイクを設置 """
-    room_reverbe.add_microphone_array(pa.MicrophoneArray(mic_coordinate, fs=room_reverbe.fs))
+    room_reverb.add_microphone_array(pa.MicrophoneArray(mic_coordinate, fs=room_reverb.fs))
     room_clean.add_microphone_array(pa.MicrophoneArray(mic_coordinate, fs=room_clean.fs))
 
     """ 各音源を部屋に追加する """
     source_coordinate = rec_util.set_souces_coordinate2(doas, distance, mic_center) # 音源の座標を計算
-    room_reverbe.add_source(source_coordinate)
+    room_reverb.add_source(source_coordinate)
     room_clean.add_source(source_coordinate)
 
     """ インパルス応答を取得する [ 音源, マイク, サンプル ] """
-    room_reverbe.compute_rir()
+    room_reverb.compute_rir()
     room_clean.compute_rir()
 
     """ インパルス応答の波形データを保存 """
-    ir_reverbe = room_reverbe.rir
+    ir_reverb = room_reverb.rir
     ir_clean = room_clean.rir
-    # print("ir_reverbe.shape: ", ir_reverbe.shape)
+    # print("ir_reverb.shape: ", ir_reverb.shape)
     # print(ir_clean)
-    ir_reverbe = ir_reverbe[0][0]
+    ir_reverb = ir_reverb[0][0]
     ir_clean = ir_clean[0][0]
 
 
     """ 正規化 """
-    ir_reverbe /= np.max(np.abs(ir_reverbe))
+    ir_reverb /= np.max(np.abs(ir_reverb))
     ir_clean /= np.max(np.abs(ir_clean))
 
     """ 畳み込んだ波形をファイルに書き込む 1つの音声ファイルに全てのチャンネルを保存 """
-    """ reverberation_only """
-    # print(f"ir_reverbe.shape:{ir_reverbe.shape}")               # 確認用
-    reverbe_path = f"{out_dir}/reverbe_only/noise/{reverbe_sec:03}sec_{angle_name}.wav"
-    my_func.exists_dir(reverbe_path)
-    sf.write(reverbe_path, ir_reverbe, sample_rate)
+    """ reverbration_only """
+    # print(f"ir_reverb.shape:{ir_reverb.shape}")               # 確認用
+    reverb_path = f"{out_dir}/reverb_only/noise/{reverb_sec:03}sec_{angle_name}.wav"
+    my_func.exists_dir(reverb_path)
+    sf.write(reverb_path, ir_reverb, sample_rate)
     """ clean """
     # print(f"ir_clean.shape:{ir_clean.shape}")               # 確認用
-    clean_path = f"{out_dir}/clean/noise/{reverbe_sec:03}sec_{angle_name}.wav"
+    clean_path = f"{out_dir}/clean/noise/{reverb_sec:03}sec_{angle_name}.wav"
     my_func.exists_dir(clean_path)
     sf.write(clean_path, ir_clean, sample_rate)
 
@@ -180,14 +180,14 @@ if __name__ == "__main__":
     is_line_list = [True]  # マイク配置が線形(True) or 円形(False)
 
 
-    for reverbe_sec in tqdm(range(50, 50+1)):
-        # print(f"reverbe_sec: ",reverbe_sec)
-        # reverbe_sec = 50
-        reverbe_par_json = f"{const.MIX_DATA_DIR}/reverbe_condition/{reverbe_sec * 10}msec.json"
-        # print("json_path:", reverbe_par_json)
-        with open(reverbe_par_json, "r") as json_file:
+    for reverb_sec in tqdm(range(50, 50+1)):
+        # print(f"reverb_sec: ",reverb_sec)
+        # reverb_sec = 50
+        reverb_par_json = f"{const.MIX_DATA_DIR}/reverb_condition/{reverb_sec * 10}msec.json"
+        # print("json_path:", reverb_par_json)
+        with open(reverb_par_json, "r") as json_file:
             json_data = json.load(json_file)
-            reverbe_par = json_data["reverbe_par"]
+            reverb_par = json_data["reverb_par"]
         for is_line in is_line_list:
             if is_line:
                 liner_circular = "liner"
@@ -197,9 +197,9 @@ if __name__ == "__main__":
                 for channel in channel_list:
                     # out_dir = os.path.join("./", "IR",  f"{channel}ch_{distance}cm_{liner_circular}")
                     out_dir = os.path.join(const.MIX_DATA_DIR, "IR", f"{channel}ch_{distance}cm_{liner_circular}")
-                    IR_speech(out_dir, reverbe_sec, reverbe_par, channel=channel, distance=distance, is_line=is_line)
+                    IR_speech(out_dir, reverb_sec, reverb_par, channel=channel, distance=distance, is_line=is_line)
                     # out_dir = os.path.join(const.SAMPLE_DATA_DIR, "IR",  f"{channel}ch_{distance}cm_{liner_circular}")
                     for dig in range(0, 0+1, 1):
                         angle = math.radians(dig)   # rad ← °
                         angle_name = f"{dig:03}dig"
-                        IR_noise(out_dir, reverbe_sec, reverbe_par, channel=channel, distance=distance, angle=angle, angle_name=angle_name, is_line=is_line)
+                        IR_noise(out_dir, reverb_sec, reverb_par, channel=channel, distance=distance, angle=angle, angle_name=angle_name, is_line=is_line)

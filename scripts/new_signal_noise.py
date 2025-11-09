@@ -11,7 +11,7 @@ import argparse  # --- ▼ 修正箇所 ▼ --- (argparseをインポート)
 from mymodule import const, rec_config as rec_conf, rec_utility as rec_util
 
 
-# reverbe_feater は rec_util 側で import される
+# reverb_feater は rec_util 側で import される
 
 
 def create_reverb_dataset_final(

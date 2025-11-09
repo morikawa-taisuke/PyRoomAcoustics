@@ -126,7 +126,7 @@ def clean(speech_dir, ir_path, output_dir):
 		save_wav(out_path, speech_reverb, sr)
 
 
-def noise_reverbe(speech_dir, noise_dir, ir_path, output_dir):
+def noise_reverb(speech_dir, noise_dir, ir_path, output_dir):
 	print("-" * 32)
 	print(f"speech_type: {speech_dir}")
 	print(f"noise_dir: {noise_dir}")
@@ -146,7 +146,7 @@ def noise_reverbe(speech_dir, noise_dir, ir_path, output_dir):
 	noise_files = [random.choice(noise_file_list) for _ in range(len(speech_files))]
 
 	snr = 0.0  # SNRは0に設定
-	reverbe = 0.5  # reverberation timeは0.5秒に設定 (ファイル名用)
+	reverb = 0.5  # reverbration timeは0.5秒に設定 (ファイル名用)
 
 	for (speech_file, noise_file) in tzip(speech_files, noise_files):
 		# ファイルパス生成
@@ -170,12 +170,12 @@ def noise_reverbe(speech_dir, noise_dir, ir_path, output_dir):
 		mixed = mix_snr(speech_reverb, noise_reverb, snr)  # (N,) or (N, C)
 
 		# 保存
-		out_name = f"{my_func.get_fname(speech_file)[0]}_{my_func.get_fname(noise_file)[0]}_{int(snr * 10):03}dB_{int(reverbe * 1000)}msec.wav"
+		out_name = f"{my_func.get_fname(speech_file)[0]}_{my_func.get_fname(noise_file)[0]}_{int(snr * 10):03}dB_{int(reverb * 1000)}msec.wav"
 		out_path = os.path.join(output_dir, out_name)
 		save_wav(out_path, mixed, sr)
 
 
-def reverbe_only(speech_dir, ir_path, output_dir):
+def reverb_only(speech_dir, ir_path, output_dir):
 	print("-" * 32)
 	print(f"speech_type: {speech_dir}")
 	print(f"ir_dir: {ir_path}")
@@ -186,7 +186,7 @@ def reverbe_only(speech_dir, ir_path, output_dir):
 
 	speech_files = my_func.get_file_list(speech_dir)
 
-	reverbe = 0.5  # reverberation timeは0.5秒に設定 (ファイル名用)
+	reverb = 0.5  # reverbration timeは0.5秒に設定 (ファイル名用)
 	for speech_file in tqdm(speech_files):
 		# 読み込み
 		speech, sr = load_wav(speech_file)
@@ -196,7 +196,7 @@ def reverbe_only(speech_dir, ir_path, output_dir):
 		speech_reverb = apply_ir(speech, speech_ir)  # (N,) or (N, C)
 
 		# 保存
-		out_name = f"{my_func.get_fname(speech_file)[0]}_{int(reverbe * 1000)}msec.wav"
+		out_name = f"{my_func.get_fname(speech_file)[0]}_{int(reverb * 1000)}msec.wav"
 		out_path = os.path.join(output_dir, out_name)
 		save_wav(out_path, speech_reverb, sr)
 
@@ -299,15 +299,15 @@ if __name__ == '__main__':
 			]
 			clean(speech_dir, ir_paths, output_dir)
 
-		# --- reverbe_only ---
-		task_cfg = tasks.get('reverbe_only', {})
+		# --- reverb_only ---
+		task_cfg = tasks.get('reverb_only', {})
 		if task_cfg.get('enabled', False):
-			print("  タスク: reverbe_only")
-			output_dir = os.path.join(output_root, split, 'reverbe_only')
+			print("  タスク: reverb_only")
+			output_dir = os.path.join(output_root, split, 'reverb_only')
 			ir_paths = [
 				os.path.join(ir_root, task_cfg.get('speech_ir_path', ''))
 			]
-			reverbe_only(speech_dir, ir_paths, output_dir)
+			reverb_only(speech_dir, ir_paths, output_dir)
 
 		# --- noise_only ---
 		task_cfg = tasks.get('noise_only', {})
@@ -321,17 +321,17 @@ if __name__ == '__main__':
 			]
 			noise_only(speech_dir, noise_dir, ir_paths, output_dir)
 
-		# --- noise_reverbe ---
-		task_cfg = tasks.get('noise_reverbe', {})
+		# --- noise_reverb ---
+		task_cfg = tasks.get('noise_reverb', {})
 		if task_cfg.get('enabled', False):
-			print("  タスク: noise_reverbe")
-			output_dir = os.path.join(output_root, split, 'noise_reverbe')
+			print("  タスク: noise_reverb")
+			output_dir = os.path.join(output_root, split, 'noise_reverb')
 			noise_dir = os.path.join(noise_root, task_cfg.get('noise_type', ''))
 			ir_paths = [
 				os.path.join(ir_root, task_cfg.get('speech_ir_path', '')),
 				os.path.join(ir_root, task_cfg.get('noise_ir_path', ''))
 			]
-			noise_reverbe(speech_dir, noise_dir, ir_paths, output_dir)
+			noise_reverb(speech_dir, noise_dir, ir_paths, output_dir)
 
 	print("\nすべての処理が完了しました。")
 # --- ▲ ステップ 3.2: 修正完了 ▲ ---

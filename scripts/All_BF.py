@@ -9,53 +9,6 @@ import os
 from mymodule import my_func, rec_config as rec_conf, rec_utility as rec_util
 
 
-def serch_reverbe_sec(reverbe_sec, channel):
-    reverbe = reverbe_sec
-    cnt = 0
-    room_dim = np.r_[10.0, 10.0, 10.0]
-    """ 音源の読み込み """
-    target_data = rec_util.load_wave_data(f'./wave/sample_data/speech/JA/test/JA04F085.wav')
-    noise_data = target_data
-    wave_data = []  # 1つの配列に格納
-    wave_data.append(target_data)
-    wave_data.append(noise_data)
-    mic_center = room_dim / 2  # アレイマイクの中心[x,y,z](m)
-    num_channels = channel  # マイクの個数(チャンネル数)
-    distance = 0.1  # 各マイクの間隔(m)
-    mic_codinate = rec_util.set_mic_coordinate(center=mic_center,
-                                               num_channels=num_channels,
-                                               distance=distance)  # 各マイクの座標
-    doas = np.array([
-        [np.pi / 2., np.pi / 2],
-        [np.pi / 2., np.pi]
-    ])  # 音源の方向[仰角, 方位角](ラジアン)
-    distance = [2., 3.]  # 音源とマイクの距離(m)
-
-    while True:
-        e_absorption, max_order = pa.inverse_sabine(reverbe, room_dim)  # Sabineの残響式から壁の吸収率と反射上限回数を決定
-        room = pa.ShoeBox(room_dim, fs=rec_conf.sampling_rate, max_order=max_order, absorption=e_absorption)
-
-        """ 部屋にマイクを設置 """
-        room.add_microphone_array(pa.MicrophoneArray(mic_codinate, fs=room.fs))
-        """ 各音源の座標 """
-        source_codinate = rec_util.set_souces_coordinate2(doas, distance, mic_center)
-        """ 各音源を部屋に追加する """
-        for idx in range(2):
-            wave_data[idx] /= np.std(wave_data[idx])
-            room.add_source(source_codinate[:, idx], signal=wave_data[idx])
-
-        room.simulate()
-        rt60 = room.measure_rt60()
-        round_rt60 = round(np.mean(rt60), 3)
-        if round_rt60 >= reverbe_sec or cnt == 100:
-            break
-        cnt+=1
-        reverbe+=0.01
-        # print(f'[{cnt}]rt60:{np.mean(rt60)}')
-    # print(f'max_order:{max_order}\ne_absorption:{e_absorption}')
-    print(f'rt60={np.mean(rt60)}')
-    return e_absorption, max_order
-
 def calculate_steering_vector(mic_alignments,source_locations,freqs,sound_speed=340,is_use_far=False):
     """ ステアリングベクトルを計算する
 
@@ -357,8 +310,8 @@ def main(clean, snr, out_dir):
     """ シミュレーションのパラメータ """
     room_dim = np.r_[10.0, 10.0, 10.0]  # 部屋の大きさ[x,y,z](m)
     num_sources = len(clean_data)  # シミュレーションで用いる音源数
-    reverberation = 0.5  # 残響時間(sec)
-    e_absorption, max_order = pa.inverse_sabine(reverberation, room_dim)  # Sabineの残響式から壁の吸収率と反射上限回数を決定
+    reverbration = 0.5  # 残響時間(sec)
+    e_absorption, max_order = pa.inverse_sabine(reverbration, room_dim)  # Sabineの残響式から壁の吸収率と反射上限回数を決定
     mic_center = room_dim / 2  # アレイマイクの中心[x,y,z](m)
     num_channels = 4  # マイクの個数(チャンネル数)
     distance = 0.1  # 各マイクの間隔(m)
@@ -406,11 +359,11 @@ def main(clean, snr, out_dir):
     # rec_util.save_wave(multi_conv_data[0,n_noise_only:]*np.iinfo(np.int16).max/20.,"./mwf_in.wav",sample_rate)
     """ チャンネルごとにファイルを分けて保存する """
     for i in range(num_channels):
-        out_path = out_dir + f"/reverberation_only/{i}ch/{file_name}"
+        out_path = out_dir + f"/reverbration_only/{i}ch/{file_name}"
         #print(file_name)
         rec_util.save_wave(multi_conv_data_no_noise[i, n_noise_only:] * np.iinfo(np.int16).max / 20.,
                                     out_path, sample_rate)
-        out_path = out_dir + f"/noise_reverberation/{i}ch/{file_name}"
+        out_path = out_dir + f"/noise_reverbration/{i}ch/{file_name}"
         # print(file_name)
         rec_util.save_wave(multi_conv_data[i, n_noise_only:] * np.iinfo(np.int16).max / 20.,
                                     out_path, sample_rate)
@@ -499,7 +452,7 @@ def main(clean, snr, out_dir):
     # print("Δsnr [dB]: {:.2f} {:.2f} {:.2f} {:.2f}   {:.2f}".format(snr_dsbf_post-snr_pre,snr_mvdr_post-snr_pre,snr_mlbf_post-snr_pre,snr_max_snr_post-snr_pre,snr_mwf_post-snr_pre))
 
 
-def main2(wave_files, out_dir, snr, reverbe_sec, reverbe_par, channel=1, is_split=False, rec_type='mix'):
+def main2(wave_files, out_dir, snr, reverb_sec, reverb_par, channel=1, is_split=False, rec_type='mix'):
     """ すべてのBFを実行
 
     Args:
@@ -558,12 +511,12 @@ def main2(wave_files, out_dir, snr, reverbe_sec, reverbe_par, channel=1, is_spli
     """ 部屋を生成する """
     if rec_type == 'mix':
         rec_type_dir = f'./{out_dir}/mix'
-        file_name = f'{signal_name}_{noise_name}_{snr}db_{reverbe_sec * 10}sec.wav'
-        room = pa.ShoeBox(room_dim, fs=sample_rate, max_order=reverbe_par[1], absorption=reverbe_par[0])
-    elif rec_type == 'reverbe':
-        rec_type_dir = f'./{out_dir}/reverbe'
-        file_name = f'{signal_name}_{reverbe_sec * 10}sec.wav'
-        room = pa.ShoeBox(room_dim, fs=sample_rate, max_order=reverbe_par[1], absorption=reverbe_par[0])
+        file_name = f'{signal_name}_{noise_name}_{snr}db_{reverb_sec * 10}sec.wav'
+        room = pa.ShoeBox(room_dim, fs=sample_rate, max_order=reverb_par[1], absorption=reverb_par[0])
+    elif rec_type == 'reverb':
+        rec_type_dir = f'./{out_dir}/reverb'
+        file_name = f'{signal_name}_{reverb_sec * 10}sec.wav'
+        room = pa.ShoeBox(room_dim, fs=sample_rate, max_order=reverb_par[1], absorption=reverb_par[0])
     elif rec_type == 'noise':
         rec_type_dir = f'./{out_dir}/noise'
         file_name = f'{signal_name}_{noise_name}_{snr}db.wav'
@@ -633,7 +586,7 @@ def main2(wave_files, out_dir, snr, reverbe_sec, reverbe_par, channel=1, is_spli
                        f'mic_codinate:\n{mic_codinate.T}\n'
                        f'source_codinate:\n{source_codinate.T}\n'
                        f'snr:{snr}\n'
-                       f'reverbe_sec:{reverbe_sec}\n'
+                       f'reverb_sec:{reverb_sec}\n'
                        f'Rt60:{rt60}\n\n')
 
 
@@ -659,10 +612,10 @@ if __name__ == '__main__':
 
     """ 録音の条件 """
     snr = 10
-    reverbe_sec = 0.5
+    reverb_sec = 0.5
     channnel = 4
     is_split = False
-    reverbe_par = rec_util.search_reverb_sec(reverbe_sec=reverbe_sec, channel=channnel)
+    reverb_par = rec_util.search_reverb_sec(reverb_sec=reverb_sec, channel=channnel)
     rec_type_list = ['mix']
 
     """ 出力先の作成 """
@@ -687,6 +640,6 @@ if __name__ == '__main__':
                 wave_files.append(noise)
                 main2(wave_files=wave_files,
                       out_dir=out_dir,
-                      snr=snr, reverbe_sec=reverbe_sec, reverbe_par=reverbe_par, channel=channnel,
+                      snr=snr, reverb_sec=reverb_sec, reverb_par=reverb_par, channel=channnel,
                       is_split=is_split,
                       rec_type=rec_type)

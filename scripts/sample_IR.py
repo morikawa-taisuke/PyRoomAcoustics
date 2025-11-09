@@ -106,11 +106,11 @@ def plot_rir_spectrogram(ir_signal, fs, nperseg=512, noverlap=None, title="イ�
 
 # パラメタ
 fs = 16000       # サンプリング周波数
-reverbe = 5
-reverbe_par = rec_util.search_reverb_sec(reverbe_sec=reverbe * 0.1, channel=1)  # 任意の残響になるようなパラメータを求める
+reverb = 5
+reverb_par = rec_util.search_reverb_sec(reverb_sec=reverb * 0.1, channel=1)  # 任意の残響になるようなパラメータを求める
 
-absorption = reverbe_par[0] # 反射率
-max_order = reverbe_par[1]    # 次数
+absorption = reverb_par[0] # 反射率
+max_order = reverb_par[1]    # 次数
 
 # 3次元の部屋形状生成
 room_dim = np.r_[5.0, 5.0, 5.0]  # 部屋の大きさ[x,y,z](m)
@@ -149,9 +149,9 @@ plt.show()
 
 # 周波数領域のIRプロット（従来の方法）
 # plot_rir_frequency_response(ir_signal, fs, nfft=4096, use_db=True,
-#                            title=f"インパルス応答の周波数特性 (残響時間: {reverbe*0.1:.1f}秒)")
+#                            title=f"インパルス応答の周波数特性 (残響時間: {reverb*0.1:.1f}秒)")
 
 # スペクトログラムプロット（新機能 - 添付画像のような表示）
 plot_rir_spectrogram(ir_signal, fs, nperseg=512, 
-                    title=f"インパルス応答のスペクトログラム (残響時間: {reverbe*0.1:.1f}秒)")
+                    title=f"インパルス応答のスペクトログラム (残響時間: {reverb*0.1:.1f}秒)")
 
