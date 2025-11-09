@@ -606,8 +606,8 @@ if __name__ == '__main__':
     """ 音声ファイル関係の指定 """
     signal_dir = './wave/sample_data/speech/JA/training'
     noise_dir = './wave/sample_data/noise/hoth.wav'
-    signal_list = my_func.get_wave_filelist(signal_dir)
-    noise_list = my_func.get_wave_filelist(noise_dir)
+    signal_list = my_func.get_file_list(signal_dir)
+    noise_list = my_func.get_file_list(noise_dir)
     out_dir= './rec_0102'
 
     """ 録音の条件 """

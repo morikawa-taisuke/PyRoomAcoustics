@@ -266,7 +266,7 @@ def search_reverb_sec(reverb_sec, channel=1, angle=np.pi):
     cnt = 0
     room_dim = np.r_[10.0, 7.0, 3.0]
     """ 音源の読み込み """
-    target_data = load_wave_data(f"./mymodule/JA01F049.wav")
+    target_data = load_wave_data(f"./sample_data/JA01F049.wav")
     noise_data = target_data
     wave_data = []  # 1つの配列に格納
     wave_data.append(target_data)

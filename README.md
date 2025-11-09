@@ -144,15 +144,43 @@ python sample_IR.py
 
 ## セットアップ
 
-### 必要なライブラリ
-
-```bash
-pip install -r requirements.txt
-```
-
 ### Pythonのバージョン
 
 Python 3.x を推奨します。
+
+### インストール手順
+
+このリポジトリのスクリプトを実行するには、`mymodule` ライブラリをインストールする必要があります。
+
+1.  **仮想環境の作成と有効化 (推奨)**
+    ```bash
+    # (Windows)
+    python -m venv venv
+    .\venv\Scripts\activate
+
+    # (Mac/Linux)
+    python3 -m venv venv
+    source venv/bin/activate
+    ```
+
+2.  **必要なライブラリのインストール**
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+3.  **`mymodule` のインストール**
+    リポジトリのルート（`setup.py` がある場所）で、以下のコマンドを実行します。
+    ```bash
+    pip install -e .
+    ```
+    * (`-e` は「編集可能（editable）モード」を意味します。これにより、`src/mymodule/` 内のコードを変更しても、すぐに実行スクリプトに反映されます。)
+
+4.  **動作確認**
+    インストールが成功したか確認します。
+    ```bash
+    python scripts/sample_IR.py
+    ```
+    * (matplotlibのウィンドウが開き、インパルス応答のスペクトログラム が表示されれば成功です。)
 
 ## ディレクトリ構成
 
