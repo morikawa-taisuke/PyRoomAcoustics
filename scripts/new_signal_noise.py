@@ -1,8 +1,6 @@
 import json
-import os
 import random
 import numpy as np
-import pyroomacoustics as pa
 import soundfile as sf
 from tqdm import tqdm
 from pathlib import Path
@@ -10,9 +8,10 @@ import sys
 import argparse  # --- ▼ 修正箇所 ▼ --- (argparseをインポート)
 
 # my_moduleが提供されていることを前提とします
-from mymodule import const, rec_config as rec_conf, rec_utility as rec_util
+from src import const, rec_config as rec_conf, rec_utility as rec_util
+
+
 # reverbe_feater は rec_util 側で import される
-from mymodule import my_func
 
 
 def create_reverb_dataset_final(

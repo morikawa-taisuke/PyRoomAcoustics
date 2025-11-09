@@ -1,15 +1,14 @@
 import json
 import math
 import os.path
-from distutils.command.clean import clean
 
 import numpy as np
 import pyroomacoustics as pa
 from tqdm import tqdm
 import soundfile as sf
 
-from mymodule import const, rec_config as rec_conf, rec_utility as rec_util
-from mymodule import my_func
+from src import const, my_func, rec_config as rec_conf, rec_utility as rec_util
+
 
 def IR_speech(out_dir, reverbe_sec, reverbe_par, channel=1, distance=0, is_line=False):
     """ シミュレーションを用いた録音 (部屋のパラメータを計算済み)
@@ -184,7 +183,7 @@ if __name__ == "__main__":
     for reverbe_sec in tqdm(range(50, 50+1)):
         # print(f"reverbe_sec: ",reverbe_sec)
         # reverbe_sec = 50
-        reverbe_par_json = f"{const.MIX_DATA_DIR}/reverbe_condition/{reverbe_sec*10}msec.json"
+        reverbe_par_json = f"{const.MIX_DATA_DIR}/reverbe_condition/{reverbe_sec * 10}msec.json"
         # print("json_path:", reverbe_par_json)
         with open(reverbe_par_json, "r") as json_file:
             json_data = json.load(json_file)
@@ -197,7 +196,7 @@ if __name__ == "__main__":
             for distance in distance_list:
                 for channel in channel_list:
                     # out_dir = os.path.join("./", "IR",  f"{channel}ch_{distance}cm_{liner_circular}")
-                    out_dir = os.path.join(const.MIX_DATA_DIR, "IR",  f"{channel}ch_{distance}cm_{liner_circular}")
+                    out_dir = os.path.join(const.MIX_DATA_DIR, "IR", f"{channel}ch_{distance}cm_{liner_circular}")
                     IR_speech(out_dir, reverbe_sec, reverbe_par, channel=channel, distance=distance, is_line=is_line)
                     # out_dir = os.path.join(const.SAMPLE_DATA_DIR, "IR",  f"{channel}ch_{distance}cm_{liner_circular}")
                     for dig in range(0, 0+1, 1):

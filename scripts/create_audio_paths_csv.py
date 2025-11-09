@@ -1,6 +1,4 @@
-import os
 import csv
-import pathlib
 from pathlib import Path
 
 
@@ -60,8 +58,7 @@ def create_sample_csv(dir_path, output_csv='sample.csv', use_absolute_path=True)
 
 
 if __name__ == '__main__':
-	from mymodule import const
-
+	from src import const
 
 	sub_dir = "val"
 	dir_path = f"{const.MIX_DATA_DIR}/DEMAND_hoth_10dB_500msec/{sub_dir}"

@@ -1,6 +1,5 @@
 import os
 import argparse
-import pandas as pd
 import numpy as np
 import soundfile as sf
 from scipy.signal import fftconvolve
@@ -8,7 +7,7 @@ from tqdm import tqdm
 from tqdm.contrib import tzip
 import random
 import json  # JSONモジュールをインポート
-from mymodule import my_func, const
+from src import my_func
 
 
 def load_wav(filepath):

@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # my_module
-from mymodule import rec_utility as rec_util
+from src import rec_utility as rec_util
 
 
 def set_circular_mic_coordinate(center, num_channels, radius):

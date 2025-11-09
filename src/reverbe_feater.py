@@ -1,5 +1,6 @@
 import numpy as np
-from mymodule import rec_config as rec_conf
+from src import rec_config as rec_conf
+
 
 # C50とD50の計算例
 def calculate_c50(rir, fs=rec_conf.sampling_rate):

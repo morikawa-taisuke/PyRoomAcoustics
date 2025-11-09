@@ -5,7 +5,7 @@ import numpy as np
 import soundfile as sf
 import matplotlib.pyplot as plt
 import pyroomacoustics as pra
-from mymodule import const, rec_config as rec_conf, rec_utility as rec_util
+from src import rec_utility as rec_util
 from scipy import signal
 
 

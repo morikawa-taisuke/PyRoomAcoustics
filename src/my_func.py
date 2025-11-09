@@ -3,10 +3,6 @@ import numpy as np
 import wave
 import array
 
-from librosa.util import find_files
-
-from mymodule import const
-
 
 def get_fname(path):
     """ 目的のファイル名と拡張子を取得
