@@ -7,10 +7,12 @@ import soundfile as sf
 from tqdm import tqdm
 from pathlib import Path
 import sys
+import argparse  # --- ▼ 修正箇所 ▼ --- (argparseをインポート)
 
 # my_moduleが提供されていることを前提とします
 from mymodule import const, rec_config as rec_conf, rec_utility as rec_util
-from mymodule import my_func, reverbe_feater as rev_feat
+# reverbe_feater は rec_util 側で import される
+from mymodule import my_func
 
 
 def create_reverb_dataset_final(
@@ -27,6 +29,7 @@ def create_reverb_dataset_final(
 	- 複数の「部屋（ドメイン）」をシミュレートする。
 	- 各シミュレーションのメタデータ（ドメインID、物理的特徴量）を保存する。
 	- 目的信号と雑音信号の両方に個別に残響を付加し、結合する。
+	(mymodule/rec_utility.py の関数を利用するようにリファクタリング)
 	"""
 	output_dir.mkdir(parents=True, exist_ok=True)
 	metadata_path = output_dir / "metadata.json"
@@ -54,11 +57,15 @@ def create_reverb_dataset_final(
 	for room_id in range(num_rooms):
 		print(f"\n--- Simulating Room (Domain) ID: {room_id} ---")
 
-		# ランダムな部屋のパラメータを生成 (サイズと吸音率は適宜調整してください)
-		room_dim = np.array([random.uniform(3, 8), random.uniform(3, 8), random.uniform(2.5, 4)])
-		# Sabineの残響式から吸収率と反射上限回数を決定
-		rt60_target = random.uniform(0.1, 1.0)
-		e_absorption, max_order = pa.inverse_sabine(rt60_target, room_dim)
+		# --- (ステップ4.1でリファクタリング済み) ---
+		# ランダムな部屋のパラメータを生成
+		room, room_dim, rt60_target, e_absorption, max_order = \
+			rec_util.create_random_room_shoebox(
+				room_dim_range=((3, 8), (3, 8), (2.5, 4)),
+				rt60_range=(0.1, 1.0),
+				fs=rec_conf.sampling_rate
+			)
+		# ---
 
 		# 部屋のメタデータに情報を記録
 		room_metadata = {
@@ -70,11 +77,10 @@ def create_reverb_dataset_final(
 			"files": []
 		}
 
-		# 部屋の作成とマイクの設置
-		room = pa.ShoeBox(room_dim, fs=rec_conf.sampling_rate, max_order=max_order, materials=pa.Material(e_absorption))
+		# --- (ステップ4.1でリファクタリング済み) ---
+		# マイクの設置 (※ここは `channel` 引数を反映)
 		mic_center = room_dim / 2
 		mic_coordinate = rec_util.set_mic_coordinate(center=mic_center, num_channels=channel, distance=0.1)
-		room.add_microphone_array(pa.MicrophoneArray(mic_coordinate, fs=room.fs))
 
 		# 音源の位置をランダムに設定（壁から離す）
 		source_pos_signal = np.array([
@@ -88,23 +94,24 @@ def create_reverb_dataset_final(
 			random.uniform(0.5, room_dim[2] - 0.5)
 		])
 
-		# 音源の追加
-		room.add_source(source_pos_signal)
-		room.add_source(source_pos_noise)
-
-		# RIRを計算
-		room.compute_rir()
-		rir_signal = room.rir[0][0]  # 目的信号のRIR
-		rir_noise = room.rir[0][1]  # 雑音信号のRIR
-
-		# 物理的特徴量（RT60, C50, D50）を計算
-		# rirが2次元配列（マイク, ソース）で返される可能性があるため、最初のRIRを使用
-		rt60 = room.measure_rt60()[0][0]
-		c50 = rev_feat.calculate_c50(rir_signal)
-		d50 = rev_feat.calculate_d50(rir_signal)
+		# RIRを計算し、特徴量を取得
+		rir_signal, rir_noise, rt60, c50, d50 = \
+			rec_util.compute_rir_and_features(
+				room,
+				mic_coordinate,
+				source_pos_signal,
+				source_pos_noise
+			)
+		# ---
 
 		# 各部屋で指定された数のファイルを生成
-		selected_speech_files = random.sample(speech_files, k=num_files_per_room)
+		if len(speech_files) < num_files_per_room:
+			print(
+				f"警告: 要求されたファイル数({num_files_per_room})が利用可能なファイル数({len(speech_files)})より多いため、利用可能な全ファイルを使用します。")
+			selected_speech_files = speech_files
+		else:
+			selected_speech_files = random.sample(speech_files, k=num_files_per_room)
+
 		for clean_filepath in tqdm(selected_speech_files, desc=f"Generating files for room {room_id}"):
 			try:
 				# クリーン音声信号の読み込みと前処理
@@ -112,17 +119,26 @@ def create_reverb_dataset_final(
 				if clean_signal.ndim > 1:
 					clean_signal = clean_signal.mean(axis=1)
 
-				# 雑音信号を切り出し
-				start_noise = random.randint(0, len(noise_signal_orig) - len(clean_signal))
-				noise_segment_orig = noise_signal_orig[start_noise: start_noise + len(clean_signal)]
+				# 雑音信号を切り出し (クリーン音声より雑音が短い場合に対応)
+				if len(noise_signal_orig) <= len(clean_signal):
+					repeat_times = int(np.ceil(len(clean_signal) / len(noise_signal_orig)))
+					noise_signal_tiled = np.tile(noise_signal_orig, repeat_times)
+				else:
+					noise_signal_tiled = noise_signal_orig
 
-				# RIRで畳み込み、残響付き信号を生成
-				reverb_signal = np.convolve(clean_signal, rir_signal, mode='full')[:len(clean_signal)]
-				reverb_noise = np.convolve(noise_segment_orig, rir_noise, mode='full')[:len(noise_segment_orig)]
+				start_noise = random.randint(0, len(noise_signal_tiled) - len(clean_signal))
+				noise_segment_orig = noise_signal_tiled[start_noise: start_noise + len(clean_signal)]
 
-				# SNRを調整して結合
-				scaled_noise = rec_util.get_scale_noise(reverb_signal, reverb_noise, snr)
-				mixed_signal = reverb_signal + scaled_noise
+				# --- (ステップ4.1でリファクタリング済み) ---
+				# (畳み込みと混合を rec_utility.py に移動)
+				mixed_signal = rec_util.convolve_and_mix(
+					clean_signal,
+					noise_segment_orig,
+					rir_signal,
+					rir_noise,
+					snr
+				)
+				# ---
 
 				# ファイル名を生成
 				base_filename = clean_filepath.stem
@@ -155,36 +171,77 @@ def create_reverb_dataset_final(
 	with open(metadata_path, "w") as f:
 		json.dump(metadata, f, indent=4)
 
-	print("\n🎉 データセットの生成が完了しました。")
+	print(f"\n🎉 {output_dir} へのデータセット生成が完了しました。")
 
 
+# --- ▼ ステップ 4.2: __main__ をJSON設定ファイル駆動に修正 ▼ ---
 if __name__ == "__main__":
-	# 使用例
-	speech_type = "subset_DEMAND"
-	noise_type = "hoth"
 
-	# `mymodule/const.py`に定義されたパスを基に設定
+	parser = argparse.ArgumentParser(description='ドメイン（部屋）ごとのデータセットを一括生成します')
+	parser.add_argument('--config', type=str, required=True,
+	                    help='処理設定が記述されたJSONファイルのパス')
+	args = parser.parse_args()
+
+	# 1. 設定ファイルを読み込む
 	try:
-		sample_data_dir = Path(const.SAMPLE_DATA_DIR)
-		mix_data_dir = Path(const.MIX_DATA_DIR)
-	except NameError:
-		print("const.pyのパス設定が読み込めません。手動でパスを設定します。")
-		sample_data_dir = Path("./sound_data/sample_data")
-		mix_data_dir = Path("./sound_data/mix_data")
+		with open(args.config, 'r', encoding='utf-8') as f:
+			config = json.load(f)
+	except FileNotFoundError:
+		print(f"エラー: 設定ファイルが見つかりません: {args.config}", file=sys.stderr)
+		sys.exit(1)
+	except json.JSONDecodeError:
+		print(f"エラー: 設定ファイル({args.config})のJSON形式が正しくありません。", file=sys.stderr)
+		sys.exit(1)
 
-	# `train/`ディレクトリ内の音声ファイルを使用
-	data_type = "test"
-	target_dir = sample_data_dir / "speech" / speech_type / data_type
-	# `noise/`ディレクトリ内の雑音ファイルを使用
-	noise_path = sample_data_dir / "noise" / f"{noise_type}.wav"
-	output_dir = mix_data_dir / "reverb_encoder_dataset" / data_type
+	print(f"設定ファイル {args.config} を読み込みました。")
 
-	create_reverb_dataset_final(
-		target_dir=target_dir,
-		noise_path=noise_path,
-		output_dir=output_dir,
-		num_rooms=10,
-		num_files_per_room=20,
-		snr=10,
-		channel=1
-	)
+	# 2. パスを変数に展開 (const.py のパスを上書き可能にする)
+	base_paths = config.get('base_paths', {})
+
+	# const.py のパスをデフォルトとし、JSONで上書き
+	default_sample_dir = Path(const.SAMPLE_DATA_DIR if 'const' in globals() else './sound_data/sample_data')
+	default_mix_dir = Path(const.MIX_DATA_DIR if 'const' in globals() else './sound_data/mix_data')
+
+	speech_root = Path(base_paths.get('speech_data_root', default_sample_dir / "speech"))
+	noise_root = Path(base_paths.get('noise_data_root', default_sample_dir / "noise"))
+	output_root = Path(base_paths.get('output_data_root', default_mix_dir))
+
+	# B案（ドメイン生成）用の設定を読み込む
+	domain_config = config.get('domain_generation_settings', {})
+
+	splits = config.get('splits', [])  # "train", "test" など
+
+	# 3. ループ処理
+	for split in splits:
+		print(f"\n--- \"{split}\" の処理を開始 ---")
+
+		# JSON内の "speech_type" (例: "subset_DEMAND") を使用
+		speech_type = domain_config.get('speech_type', 'subset_DEMAND')
+		target_dir = speech_root / speech_type / split
+
+		# JSON内の "noise_type" (例: "hoth.wav") を使用
+		noise_path = noise_root / domain_config.get('noise_type', 'hoth.wav')
+
+		# JSON内の "output_name" (例: "reverb_encoder_dataset") を使用
+		output_dir = output_root / domain_config.get('output_name', 'reverb_encoder_dataset') / split
+
+		# ディレクトリが存在するか確認
+		if not target_dir.exists():
+			print(f"警告: 目的信号ディレクトリが見つかりません: {target_dir}", file=sys.stderr)
+			continue
+		if not noise_path.exists():
+			print(f"警告: 雑音ファイルが見つかりません: {noise_path}", file=sys.stderr)
+			continue
+
+		create_reverb_dataset_final(
+			target_dir=target_dir,
+			noise_path=noise_path,
+			output_dir=output_dir,
+			num_rooms=domain_config.get('num_rooms', 10),
+			num_files_per_room=domain_config.get('num_files_per_room', 20),
+			snr=domain_config.get('snr', 10),
+			channel=domain_config.get('channel', 1)
+		)
+
+	print("\nすべての処理が完了しました。")
+# --- ▲ ステップ 4.2: 修正完了 ▲ ---

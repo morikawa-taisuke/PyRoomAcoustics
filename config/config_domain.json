@@ -1,0 +1,17 @@
+{
+  "base_paths": {
+    "speech_data_root": "./sound_data/sample_data/speech",
+    "noise_data_root": "./sound_data/sample_data/noise",
+    "output_data_root": "./sound_data/mix_data"
+  },
+  "splits": ["test", "train"],
+  "domain_generation_settings": {
+    "output_name": "reverb_encoder_dataset_v2",
+    "speech_type": "subset_DEMAND",
+    "noise_type": "hoth.wav",
+    "num_rooms": 10,
+    "num_files_per_room": 20,
+    "snr": 10,
+    "channel": 1
+  }
+}
