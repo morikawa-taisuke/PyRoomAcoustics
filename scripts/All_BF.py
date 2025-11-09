@@ -6,7 +6,7 @@ import scipy as scipy
 import random
 import os
 #my_module
-from src import my_func, rec_config as rec_conf, rec_utility as rec_util
+from mymodule import my_func, rec_config as rec_conf, rec_utility as rec_util
 
 
 def serch_reverbe_sec(reverbe_sec, channel):

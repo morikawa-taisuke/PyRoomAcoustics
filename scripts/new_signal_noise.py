@@ -8,7 +8,7 @@ import sys
 import argparse  # --- ▼ 修正箇所 ▼ --- (argparseをインポート)
 
 # my_moduleが提供されていることを前提とします
-from src import const, rec_config as rec_conf, rec_utility as rec_util
+from mymodule import const, rec_config as rec_conf, rec_utility as rec_util
 
 
 # reverbe_feater は rec_util 側で import される

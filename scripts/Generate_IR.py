@@ -7,7 +7,7 @@ import pyroomacoustics as pa
 from tqdm import tqdm
 import soundfile as sf
 
-from src import const, my_func, rec_config as rec_conf, rec_utility as rec_util
+from mymodule import const, my_func, rec_config as rec_conf, rec_utility as rec_util
 
 
 def IR_speech(out_dir, reverbe_sec, reverbe_par, channel=1, distance=0, is_line=False):

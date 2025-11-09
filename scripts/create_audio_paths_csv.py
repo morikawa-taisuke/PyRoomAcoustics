@@ -58,7 +58,7 @@ def create_sample_csv(dir_path, output_csv='sample.csv', use_absolute_path=True)
 
 
 if __name__ == '__main__':
-	from src import const
+	from src.mymodule import const
 
 	sub_dir = "val"
 	dir_path = f"{const.MIX_DATA_DIR}/DEMAND_hoth_10dB_500msec/{sub_dir}"

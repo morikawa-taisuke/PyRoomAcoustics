@@ -1,5 +1,5 @@
 import numpy as np
-from src import rec_config as rec_conf
+from mymodule import rec_config as rec_conf
 
 
 # C50とD50の計算例

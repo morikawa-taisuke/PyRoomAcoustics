@@ -7,7 +7,7 @@ from tqdm import tqdm
 from tqdm.contrib import tzip
 import random
 import json  # JSONモジュールをインポート
-from src import my_func
+from mymodule import my_func
 
 
 def load_wav(filepath):

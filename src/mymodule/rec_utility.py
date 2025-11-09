@@ -6,7 +6,7 @@ import math
 import random
 import pyroomacoustics as pa
 
-from src import reverbe_feater as rev_feat, my_func, rec_config as rec_conf
+from mymodule import reverbe_feater as rev_feat, my_func, rec_config as rec_conf
 
 
 def set_mic_coordinate(center, num_channels, distance):
