@@ -1,7 +1,5 @@
 import os
 import numpy as np
-import wave
-import array
 
 
 def get_fname(path):
@@ -107,48 +105,6 @@ def get_file_list(dir_path:str, ext:str='.wav') -> list:
         return [f'{dir_path}/{file_path}' for file_path in os.listdir(dir_path) if os.path.splitext(file_path)[1] == ext]
     else:
         return [dir_path]
-
-def load_wav(path):
-    """ 保存のSRが異なれば変換する
-
-    Args:
-        path: wavファイルのパス
-
-    Returns:
-        amplitude   : 振幅
-        prm         : パラメータ
-    """
-    wav = wave.open(path, "r")
-    #print("wav", wav.shape)
-    prm = wav.getparams()
-    #print("prm", prm.shape)
-    buffer = wav.readframes(wav.getnframes())
-    #print("buffer", buffer.shape)
-    amptitude = (np.frombuffer(buffer, dtype="int16")).astype(np.float64)
-    #print("amptitude", amptitude.shape)
-    #sr = prm.framerate
-    #if not sr == SR:
-        # サンプリングレートをあわせる
-        #amptitude = resample(amptitude.astype(np.float64), sr, SR)
-
-    return amptitude, prm
-
-def save_wav(path, wav, prm):
-    """ wavファイルの保存
-
-    Args:
-        path    : wavファイルのパス
-        wav     : 保存する波形
-        prm     : パラメータ
-
-    Returns:
-        None
-    """
-    f = wave.Wave_write(path)
-    f.setparams(prm)
-    #f.setframerate(SR)
-    f.writeframes(array.array("h", wav.astype(np.int16)).tobytes())
-    f.close()
 
 def make_filename(file_A,file_B):
     name_A, _ = get_fname(file_A)

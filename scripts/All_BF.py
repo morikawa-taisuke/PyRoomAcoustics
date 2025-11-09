@@ -1,4 +1,4 @@
-import wave as wave
+import soundfile as sf
 import pyroomacoustics as pa
 import numpy as np
 import scipy.signal as sp
@@ -276,9 +276,8 @@ def main(clean, snr, out_dir):
     n_sources=len(clean_wave_files)
 
     #長さを調べる
-    wav=wave.open(clean_wave_files[0])
-    n_samples=wav.getnframes()
-    wav.close()
+    info = sf.info(clean_wave_files[0])
+    n_samples = info.frames
 
     clean_data=np.zeros([n_sources,n_samples+n_noise_only])
 
