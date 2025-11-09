@@ -108,7 +108,7 @@ def plot_rir_spectrogram(ir_signal, fs, nperseg=512, noverlap=None, title="イ�
 # パラメタ
 fs = 16000       # サンプリング周波数
 reverbe = 5
-reverbe_par = serch_reverbe_sec(reverbe_sec=reverbe * 0.1, channel=1)  # 任意の残響になるようなパラメータを求める
+reverbe_par = rec_util.search_reverb_sec(reverbe_sec=reverbe * 0.1, channel=1)  # 任意の残響になるようなパラメータを求める
 
 absorption = reverbe_par[0] # 反射率
 max_order = reverbe_par[1]    # 次数

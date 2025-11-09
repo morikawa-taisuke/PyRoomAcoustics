@@ -662,7 +662,7 @@ if __name__ == '__main__':
     reverbe_sec = 0.5
     channnel = 4
     is_split = False
-    reverbe_par = serch_reverbe_sec(reverbe_sec=reverbe_sec, channel=channnel)
+    reverbe_par = rec_util.search_reverb_sec(reverbe_sec=reverbe_sec, channel=channnel)
     rec_type_list = ['mix']
 
     """ 出力先の作成 """
