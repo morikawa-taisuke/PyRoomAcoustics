@@ -1,0 +1,78 @@
+# 1. 📂 パスと基本設定
+base_paths:
+  precomputed_params_dir: "./precomputed_params"
+  speech_data_root: "./sound_data/sample_data/speech/subset_DEMAND"
+  noise_data_root: "./sound_data/sample_data/noise/DEMAND_types"
+  output_data_root: "./sound_data/mix_data"
+
+splits: ["train", "test", "val"]
+
+# ----------------------------------------------------
+
+# 2. 🌍 シミュレーションと生成の設定
+domain_generation_settings:
+  output_name: "dataset_random_1ch_v1" # この実験用の出力名
+
+  # --- ▼ 部屋パラメータ(ランダム) ▼ ---
+  # precomputed_params_dir からJSONをランダムに選択
+  room_selection:
+    strategy: 'random'
+
+  # RT60を 0.2s から 1.0s の間でランダムに選択
+  rt60_range: [0.2, 1.0]
+
+  # --- ▼ 部屋数とファイル数 ▼ ---
+  # 多様な部屋（RIR）を生成
+  num_rooms_per_split:
+    train: 50
+    val: 5
+    test: 10
+
+  # データ拡張なし
+  num_files_per_room: 'auto'
+
+# ----------------------------------------------------
+
+# 3. 🎤 マイクの配置 (シングルチャンネル指定)
+microphone:
+  position_strategy: 'fixed_cartesian'
+  position_coords: [4.0, 3.0, 1.5] # (部屋サイズがランダムなので中心固定は不適だが例として)
+
+  array:
+    # --- ▼ シングルチャンネル(固定) ▼ ---
+    shape: 'single'
+    channels: 1
+
+# ----------------------------------------------------
+
+# 4. 🔉 音源の配置 (ランダム)
+speech_source:
+  # 話者位置もランダム化
+  position_strategy: 'random_spherical_range'
+  params:
+    azimuth_range: [-90, 90]
+    elevation_range: [-10, 10]
+    distance_range: [1.0, 3.0]
+noise_source:
+  count_range: [1, 2] # ノイズ源の数も 1〜2 の間でランダム
+  position_strategy: 'random_spherical_range'
+  params:
+    azimuth_range: [-180, 180]
+    elevation_range: [-10, 10]
+    distance_range: [1.0, 4.0]
+
+# ----------------------------------------------------
+
+# 5. 🎛️ 混合パラメータ
+mixing_params:
+  # --- ▼ SNR(ランダム) ▼ ---
+  snr_range_db: [0, 20] # 0dB から 20dB の間でランダム
+
+# ----------------------------------------------------
+
+# 6. 💾 保存設定
+output_files:
+  save_mixture: true
+  save_reverberant_speech: true
+  save_clean_speech: true
+  save_reverberant_noise: false

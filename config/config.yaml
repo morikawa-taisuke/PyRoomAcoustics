@@ -1,0 +1,82 @@
+# configs/dataset_meeting_room_v1.yml
+
+# 1. 📂 パスと基本設定
+base_paths:
+    speech_data_root: "./sound_data/sample_data/speech/subset_DEMAND"
+    noise_data_root: "./sound_data/sample_data/noise/DEMAND_types"
+    output_data_root: "./sound_data/mix_data"
+
+splits: [ "train", "test", "val" ] # "train" と "test" "val" の両方を生成
+
+domain_generation_settings:
+    output_name: "dataset_meeting_room_v1" # 出力ディレクトリ名
+    num_rooms_per_split: # スプリットごとの部屋（ドメイン）数
+        train: 50
+        test: 10
+    num_files_per_room: 100 # 1部屋あたりのファイル数
+
+    # --- (ご要望: ランダム化したいもの) ---
+    # speech_data_root と noise_data_root をディレクトリで指定することで、
+    # スクリプト側はそれらからランダムにファイルを選択・組み合わせて使用します。
+    # (new_signal_noise.pyの既存ロジックがこれに対応しています)
+
+# ----------------------------------------------------
+
+# 2. 🌍 部屋の物理特性 (シミュレーションごと)
+room_params:
+    # --- (ご要望: どちらにも設定したい) ---
+    # [min, max] で指定。min == max なら「固定」。
+    x_range: [ 8.0, 8.0 ]     # 固定 (8m)
+    y_range: [ 6.0, 6.0 ]     # 固定 (6m)
+    z_range: [ 2.8, 3.2 ]     # ランダム (2.8m ~ 3.2m)
+
+    rt60_range: [ 0.4, 0.6 ]  # ランダム (0.4s ~ 0.6s)
+
+    # (注: 「ランダムの中から3~5種類を決定する」場合は、
+    #  x_range: [8.0, 8.0] のYAML, x_range: [7.0, 7.0] のYAML...
+    #  のようにYAMLファイルを5つ用意し、それぞれ実行するのが管理上最も明瞭です。)
+
+# ----------------------------------------------------
+
+# 3. 🎤 マイクの配置 (シミュレーションごと)
+microphone:
+    # --- (ご要望: 固定化したいもの) ---
+    position_strategy: 'fixed_cartesian' # 'fixed_cartesian' (デカルト座標固定)
+    # 将来: 'center', 'random_area' など
+    position_coords: [ 4.0, 3.0, 1.5 ]     # 部屋の中心 (x=8/2, y=6/2, z=1.5)
+
+    array:
+        shape: 'linear'   # 'linear', 'circular', 'single' (1chの場合)
+        channels: 4       # チャンネル数 (1chの場合は 1)
+        spacing: 0.05     # (linearの場合) マイク間隔 (m)
+        # diameter: 0.1   # (circularの場合) 直径 (m)
+
+# ----------------------------------------------------
+
+# 4. 🔉 音源の配置 (シミュレーションごと)
+speech_source: # 話者
+    # --- (ご要望: 固定化したいもの) ---
+    position_strategy: 'fixed_spherical' # 'fixed_spherical' (マイクからの極座標固定)
+    params:
+        azimuth: 0      # 水平角 0度 (マイク正面)
+        elevation: 0    # 仰角 0度 (マイク水平)
+        distance: 1.5   # 距離 1.5m
+
+noise_source: # 雑音
+    count_range: [ 1, 1 ] # 雑音源の数 (1個に固定)
+
+    # --- (ご要望: どちらにも設定したい) ---
+    position_strategy: 'random_spherical_range' # 'random_spherical_range' (極座標ランダム)
+    # 固定する場合: 'fixed_spherical'
+    params:
+        azimuth_range: [ -180, 180 ]   # 水平角 (全方位)
+        elevation_range: [ -10, 10 ]   # 仰角 (ほぼ水平)
+        distance_range: [ 1.0, 4.0 ]   # 距離 (1m ~ 4m)
+
+# ----------------------------------------------------
+
+# 5. 🎛️ 混合パラメータ (ファイルごと)
+mixing_params:
+    # --- (ご要望: どちらにも設定したい) ---
+    snr_range_db: [ 5, 20 ] # ランダム (5dB ~ 20dB)
+    # 固定する場合: [10, 10]

@@ -1,0 +1,82 @@
+# 1. 📂 パスと基本設定
+base_paths:
+  # ステップ1で作成した事前計算JSONが保存されているディレクトリ
+  precomputed_params_dir: "./precomputed_params"
+
+  speech_data_root: "./sound_data/sample_data/speech/subset_DEMAND"
+  noise_data_root: "./sound_data/sample_data/noise/DEMAND_types"
+  output_data_root: "./sound_data/mix_data"
+
+splits: ["train", "test"]
+
+# ----------------------------------------------------
+
+# 2. 🌍 シミュレーションと生成の設定
+domain_generation_settings:
+  output_name: "dataset_fixed_4ch_v1" # この実験用の出力名
+
+  # --- ▼ 部屋パラメータ(固定) ▼ ---
+  # 部屋のサイズを "8.0m_6.0m_3.0m.json" のみを使用するように固定
+  # (注: これを実現するには、前回提案したスクリプトのロジックに
+  #  'fixed_room_json' を読み取る機能を追加する必要があります)
+  room_selection:
+    strategy: 'fixed'
+    fixed_room_json: "8.0m_6.0m_3.0m.json" # precomputed_params_dir 内の特定のJSON
+
+  # RT60を 0.5s に固定
+  rt60_range: [0.5, 0.5] # [min, max] を同じ値にする
+
+  # --- ▼ 部屋数とファイル数 ▼ ---
+  # RIR（部屋）は1種類で固定なので、部屋数は 1 に設定
+  num_rooms_per_split:
+    train: 1
+    test: 1
+
+  # データ拡張はせず、教師データを1部屋で使い切る
+  num_files_per_room: 'auto'
+
+# ----------------------------------------------------
+
+# 3. 🎤 マイクの配置 (マルチチャンネル指定)
+microphone:
+  position_strategy: 'fixed_cartesian'
+  position_coords: [4.0, 3.0, 1.5] # 部屋の中心
+
+  array:
+    # --- ▼ マルチチャンネル(固定) ▼ ---
+    shape: 'linear'   # 4chの線形アレイを指定
+    channels: 4
+    spacing: 0.05     # 5cm間隔
+
+# ----------------------------------------------------
+
+# 4. 🔉 音源の配置 (任意: ここでは固定)
+speech_source:
+  position_strategy: 'fixed_spherical'
+  params:
+    azimuth: 0
+    elevation: 0
+    distance: 1.5
+noise_source:
+  count_range: [1, 1]
+  position_strategy: 'fixed_spherical' # ノイズ位置も固定
+  params:
+    azimuth: 90 # 90度
+    elevation: 0
+    distance: 3.0
+
+# ----------------------------------------------------
+
+# 5. 🎛️ 混合パラメータ
+mixing_params:
+  # --- ▼ SNR(固定) ▼ ---
+  snr_range_db: [10, 10] # SNRを 10dB に固定
+
+# ----------------------------------------------------
+
+# 6. 💾 保存設定
+output_files:
+  save_mixture: true
+  save_reverberant_speech: true
+  save_clean_speech: true
+  save_reverberant_noise: false

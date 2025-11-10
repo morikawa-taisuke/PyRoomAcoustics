@@ -1,246 +1,332 @@
+# scripts/new_signal_noise.py
+# (事前計算JSONとYAMLに基づきデータセットを高速生成するハイブリッド版)
+
 import json
 import random
 import numpy as np
-import soundfile as sf
+import pyroomacoustics as pa
 from tqdm import tqdm
 from pathlib import Path
 import sys
-import argparse  # --- ▼ 修正箇所 ▼ --- (argparseをインポート)
+import argparse
+import decimal
 
-# my_moduleが提供されていることを前提とします
-from mymodule import const, rec_config as rec_conf, rec_utility as rec_util
+# (リポジトリ構成案 に従い、mymoduleからインポート)
+# setup.py でインストールされている前提
+from mymodule import rec_utility as rec_util
+# (rec_utility.py に移動させた定数と関数をインポート)
+from mymodule.rec_utility import (
+	SAMPLING_RATE,
+	load_yaml_config,
+	load_wav,
+	save_wav,
+	get_file_list,
+	get_random_value,
+	get_mic_array,
+	get_source_positions,
+	compute_rirs,
+	convolve_and_mix,
+	calculate_c50,
+	calculate_d50
+)
 
 
-# reverb_feater は rec_util 側で import される
+# JSONシリアライズ用
+class NumpyDecimalEncoder(json.JSONEncoder):
+	def default(self, o):
+		if isinstance(o, np.integer):
+			return int(o)
+		if isinstance(o, np.floating):
+			return float(o)
+		if isinstance(o, np.ndarray):
+			return o.tolist()
+		if isinstance(o, decimal.Decimal):
+			return str(o)
+		return super(NumpyDecimalEncoder, self).default(o)
 
 
-def create_reverb_dataset_final(
-		target_dir: Path,
-		noise_path: Path,
-		output_dir: Path,
-		num_rooms: int,
-		num_files_per_room: int,
-		snr: float,
-		channel: int = 1
-):
+def generate_dataset(config_path):
 	"""
-	自己教師あり学習用のデータセットを生成する関数。
-	- 複数の「部屋（ドメイン）」をシミュレートする。
-	- 各シミュレーションのメタデータ（ドメインID、物理的特徴量）を保存する。
-	- 目的信号と雑音信号の両方に個別に残響を付加し、結合する。
-	(mymodule/rec_utility.py の関数を利用するようにリファクタリング)
+	YAML設定ファイルに基づき、データセット生成の全プロセスを実行する
 	"""
-	output_dir.mkdir(parents=True, exist_ok=True)
-	metadata_path = output_dir / "metadata.json"
-	metadata = {}
-
-	# 目的信号のファイルリストを取得
-	speech_files = list(target_dir.rglob("*.wav"))
-	if not speech_files:
-		print(f"❌ エラー: 目的信号ファイルが見つかりません: {target_dir}", file=sys.stderr)
-		return
-
-	print(f"✅ 目的信号ファイルリストの取得完了。{len(speech_files)} 個のファイルを処理します。")
-
-	# 雑音信号の読み込み (一度だけ)
+	# 1. 設定ファイルの読み込み
 	try:
-		noise_signal_orig, fs_noise = sf.read(noise_path)
+		config = rec_util.load_yaml_config(config_path)
 	except FileNotFoundError:
-		print(f"❌ エラー: 雑音ファイルが見つかりません: {noise_path}", file=sys.stderr)
-		return
-
-	if noise_signal_orig.ndim > 1:
-		noise_signal_orig = noise_signal_orig.mean(axis=1)
-
-	# 部屋ごとにループ
-	for room_id in range(num_rooms):
-		print(f"\n--- Simulating Room (Domain) ID: {room_id} ---")
-
-		# --- (ステップ4.1でリファクタリング済み) ---
-		# ランダムな部屋のパラメータを生成
-		room, room_dim, rt60_target, e_absorption, max_order = \
-			rec_util.create_random_room_shoebox(
-				room_dim_range=((3, 8), (3, 8), (2.5, 4)),
-				rt60_range=(0.1, 1.0),
-				fs=rec_conf.sampling_rate
-			)
-		# ---
-
-		# 部屋のメタデータに情報を記録
-		room_metadata = {
-			"room_id": room_id,
-			"room_dim": room_dim.tolist(),
-			"target_rt60": rt60_target,
-			"absorption": e_absorption,
-			"max_order": max_order,
-			"files": []
-		}
-
-		# --- (ステップ4.1でリファクタリング済み) ---
-		# マイクの設置 (※ここは `channel` 引数を反映)
-		mic_center = room_dim / 2
-		mic_coordinate = rec_util.set_mic_coordinate(center=mic_center, num_channels=channel, distance=0.1)
-
-		# 音源の位置をランダムに設定（壁から離す）
-		source_pos_signal = np.array([
-			random.uniform(0.5, room_dim[0] - 0.5),
-			random.uniform(0.5, room_dim[1] - 0.5),
-			random.uniform(0.5, room_dim[2] - 0.5)
-		])
-		source_pos_noise = np.array([
-			random.uniform(0.5, room_dim[0] - 0.5),
-			random.uniform(0.5, room_dim[1] - 0.5),
-			random.uniform(0.5, room_dim[2] - 0.5)
-		])
-
-		# RIRを計算し、特徴量を取得
-		rir_signal, rir_noise, rt60, c50, d50 = \
-			rec_util.compute_rir_and_features(
-				room,
-				mic_coordinate,
-				source_pos_signal,
-				source_pos_noise
-			)
-		# ---
-
-		# 各部屋で指定された数のファイルを生成
-		if len(speech_files) < num_files_per_room:
-			print(
-				f"警告: 要求されたファイル数({num_files_per_room})が利用可能なファイル数({len(speech_files)})より多いため、利用可能な全ファイルを使用します。")
-			selected_speech_files = speech_files
-		else:
-			selected_speech_files = random.sample(speech_files, k=num_files_per_room)
-
-		for clean_filepath in tqdm(selected_speech_files, desc=f"Generating files for room {room_id}"):
-			try:
-				# クリーン音声信号の読み込みと前処理
-				clean_signal, fs_clean = sf.read(clean_filepath)
-				if clean_signal.ndim > 1:
-					clean_signal = clean_signal.mean(axis=1)
-
-				# 雑音信号を切り出し (クリーン音声より雑音が短い場合に対応)
-				if len(noise_signal_orig) <= len(clean_signal):
-					repeat_times = int(np.ceil(len(clean_signal) / len(noise_signal_orig)))
-					noise_signal_tiled = np.tile(noise_signal_orig, repeat_times)
-				else:
-					noise_signal_tiled = noise_signal_orig
-
-				start_noise = random.randint(0, len(noise_signal_tiled) - len(clean_signal))
-				noise_segment_orig = noise_signal_tiled[start_noise: start_noise + len(clean_signal)]
-
-				# --- (ステップ4.1でリファクタリング済み) ---
-				# (畳み込みと混合を rec_utility.py に移動)
-				mixed_signal = rec_util.convolve_and_mix(
-					clean_signal,
-					noise_segment_orig,
-					rir_signal,
-					rir_noise,
-					snr
-				)
-				# ---
-
-				# ファイル名を生成
-				base_filename = clean_filepath.stem
-				output_filename = f"{base_filename}_room{room_id:03}_rt{int(rt60 * 10):03}_snr{snr:02}.wav"
-
-				# 出力ディレクトリに保存
-				output_sub_dir = output_dir / f"room_{room_id}"
-				output_sub_dir.mkdir(parents=True, exist_ok=True)
-
-				output_path = output_sub_dir / output_filename
-				sf.write(output_path, mixed_signal, rec_conf.sampling_rate)
-
-				# メタデータにファイル情報を追加
-				file_metadata = {
-					"filename": output_filename,
-					"clean_source_file": clean_filepath.name,
-					"rt60": rt60,
-					"c50": c50,
-					"d50": d50,
-					"snr": snr
-				}
-				room_metadata["files"].append(file_metadata)
-
-			except Exception as e:
-				tqdm.write(f"❌ ファイル処理中にエラーが発生しました: {clean_filepath.name} ({e})", file=sys.stderr)
-
-		metadata[f"room_{room_id}"] = room_metadata
-
-	# 全メタデータファイルを保存
-	with open(metadata_path, "w") as f:
-		json.dump(metadata, f, indent=4)
-
-	print(f"\n🎉 {output_dir} へのデータセット生成が完了しました。")
-
-
-# --- ▼ ステップ 4.2: __main__ をJSON設定ファイル駆動に修正 ▼ ---
-if __name__ == "__main__":
-
-	parser = argparse.ArgumentParser(description='ドメイン（部屋）ごとのデータセットを一括生成します')
-	parser.add_argument('--config', type=str, required=True,
-	                    help='処理設定が記述されたJSONファイルのパス')
-	args = parser.parse_args()
-
-	# 1. 設定ファイルを読み込む
-	try:
-		with open(args.config, 'r', encoding='utf-8') as f:
-			config = json.load(f)
-	except FileNotFoundError:
-		print(f"エラー: 設定ファイルが見つかりません: {args.config}", file=sys.stderr)
+		print(f"❌ エラー: 設定ファイルが見つかりません: {config_path}", file=sys.stderr)
 		sys.exit(1)
-	except json.JSONDecodeError:
-		print(f"エラー: 設定ファイル({args.config})のJSON形式が正しくありません。", file=sys.stderr)
+	except Exception as e:
+		print(f"❌ エラー: 設定ファイル {config_path} の読み込みに失敗: {e}", file=sys.stderr)
 		sys.exit(1)
 
-	print(f"設定ファイル {args.config} を読み込みました。")
+	print(f"✅ 設定ファイル {config_path} を読み込みました。")
 
-	# 2. パスを変数に展開 (const.py のパスを上書き可能にする)
-	base_paths = config.get('base_paths', {})
+	# 2. パスの設定
+	base_paths = config['base_paths']
+	precomputed_dir = Path(base_paths['precomputed_params_dir'])
+	speech_root = Path(base_paths['speech_data_root'])
+	noise_root = Path(base_paths['noise_data_root'])
+	output_root = Path(base_paths['output_data_root'])
 
-	# const.py のパスをデフォルトとし、JSONで上書き
-	default_sample_dir = Path(const.SAMPLE_DATA_DIR if 'const' in globals() else './sound_data/sample_data')
-	default_mix_dir = Path(const.MIX_DATA_DIR if 'const' in globals() else './sound_data/mix_data')
+	if not precomputed_dir.exists():
+		print(f"❌ エラー: 事前計算ディレクトリが見つかりません: {precomputed_dir}", file=sys.stderr)
+		sys.exit(1)
 
-	speech_root = Path(base_paths.get('speech_data_root', default_sample_dir / "speech"))
-	noise_root = Path(base_paths.get('noise_data_root', default_sample_dir / "noise"))
-	output_root = Path(base_paths.get('output_data_root', default_mix_dir))
+	# 3. 事前計算パラメータと音声ファイルのリスト取得
+	try:
+		precomputed_json_files = rec_util.get_file_list(precomputed_dir, '.json')
+		print(f"    - {len(precomputed_json_files)} 個の事前計算された部屋パラメータを発見。")
 
-	# B案（ドメイン生成）用の設定を読み込む
-	domain_config = config.get('domain_generation_settings', {})
+		speech_files = rec_util.get_file_list(speech_root, '.wav')
+		print(f"    - {len(speech_files)} 個の教師用音声ファイルを発見。")
 
-	splits = config.get('splits', [])  # "train", "test" など
+		all_noise_files = rec_util.get_file_list(noise_root, '.wav')
+		print(f"    - {len(all_noise_files)} 個の雑音ファイルを発見。")
 
-	# 3. ループ処理
-	for split in splits:
+	except FileNotFoundError as e:
+		print(f"❌ エラー: {e}", file=sys.stderr)
+		sys.exit(1)
+
+	# 4. スプリットごとに処理
+	for split in config['splits']:
 		print(f"\n--- \"{split}\" の処理を開始 ---")
+		process_split(config=config,
+		              split=split,
+		              speech_files=speech_files,
+		              all_noise_files=all_noise_files,
+		              precomputed_json_files=precomputed_json_files,
+		              output_root=output_root)
 
-		# JSON内の "speech_type" (例: "subset_DEMAND") を使用
-		speech_type = domain_config.get('speech_type', 'subset_DEMAND')
-		target_dir = speech_root / speech_type / split
 
-		# JSON内の "noise_type" (例: "hoth.wav") を使用
-		noise_path = noise_root / domain_config.get('noise_type', 'hoth.wav')
+def process_split(config, split, speech_files, all_noise_files,
+                  precomputed_json_files, output_root):
+	"""
+	単一のスプリット（例: "train"）のデータセット生成を実行する
+	"""
+	settings = config['domain_generation_settings']
 
-		# JSON内の "output_name" (例: "reverb_encoder_dataset") を使用
-		output_dir = output_root / domain_config.get('output_name', 'reverb_encoder_dataset') / split
+	num_rooms = settings['num_rooms_per_split'][split]
+	num_files_setting = settings['num_files_per_room']
 
-		# ディレクトリが存在するか確認
-		if not target_dir.exists():
-			print(f"警告: 目的信号ディレクトリが見つかりません: {target_dir}", file=sys.stderr)
-			continue
-		if not noise_path.exists():
-			print(f"警告: 雑音ファイルが見つかりません: {noise_path}", file=sys.stderr)
-			continue
+	total_files = len(speech_files)
+	if total_files == 0:
+		print(f"警告: {split} の教師データが0件。スキップします。")
+		return
 
-		create_reverb_dataset_final(
-			target_dir=target_dir,
-			noise_path=noise_path,
-			output_dir=output_dir,
-			num_rooms=domain_config.get('num_rooms', 10),
-			num_files_per_room=domain_config.get('num_files_per_room', 20),
-			snr=domain_config.get('snr', 10),
-			channel=domain_config.get('channel', 1)
+	# --- (ご要望: 'auto' モードの実装) ---
+	if num_files_setting == 'auto':
+		# (教師データ数 // 部屋数) で自動計算
+		# データ拡張なし（RIRの再利用なし）
+		num_files_per_room = total_files // num_rooms
+		if num_files_per_room == 0:
+			print(f"警告: 部屋数({num_rooms}) がファイル数({total_files}) より多いため、")
+			print(f"       部屋数を {total_files} に制限します。")
+			num_rooms = total_files
+			num_files_per_room = 1
+
+		print(f"    - {split}: {total_files} ファイル / {num_rooms} 部屋 = {num_files_per_room} ファイル/部屋 (自動)")
+		# 教師データを、各部屋に重複なく割り当てる
+		speech_chunks = np.array_split(speech_files, num_rooms)
+
+	else:
+		# 固定値（例: 100）が指定された場合
+		# データ拡張あり（RIRの再利用あり）
+		num_files_per_room = int(num_files_setting)
+		print(f"    - {split}: {num_rooms} 部屋 × {num_files_per_room} ファイル/部屋 (固定)")
+		# 各部屋で全教師データからランダムサンプリングする
+		speech_chunks = [
+			random.choices(speech_files, k=num_files_per_room)
+			for _ in range(num_rooms)
+		]
+
+	# --- 部屋（ドメイン）ごとにループ ---
+	for room_id in tqdm(range(num_rooms), desc=f"Simulating {split} rooms"):
+		room_output_dir = output_root / settings['output_name'] / split / f"room_{room_id:04d}"
+		room_speech_files = speech_chunks[room_id]
+
+		generate_room_data(
+			config=config,
+			room_id=room_id,
+			room_output_dir=room_output_dir,
+			room_speech_files=room_speech_files,
+			all_noise_files=all_noise_files,
+			precomputed_json_files=precomputed_json_files
 		)
 
-	print("\nすべての処理が完了しました。")
-# --- ▲ ステップ 4.2: 修正完了 ▲ ---
+
+def generate_room_data(config, room_id, room_output_dir, room_speech_files,
+                       all_noise_files, precomputed_json_files):
+	"""
+	単一の部屋（RIR）のシミュレーションと、
+	それに紐づく全ファイル（例: 100件）の生成を実行する
+	"""
+
+	settings = config['domain_generation_settings']
+	rt60_range = settings['rt60_range']
+
+	# 1. 部屋パラメータ（JSON）の選択
+	json_path = Path(random.choice(precomputed_json_files))
+	with open(json_path, 'r') as f:
+		room_params_data = json.load(f)
+
+	# 2. RT60の選択
+	available_keys = [
+		k for k in room_params_data.keys()
+		if rt60_range[0] <= float(k.replace('s', '')) <= rt60_range[1]
+	]
+	if not available_keys:
+		tqdm.write(f"警告: {json_path.name} に {rt60_range} のRT60データがありません。スキップ。")
+		return
+
+	selected_rt60_key = random.choice(available_keys)
+	selected_params = room_params_data[selected_rt60_key]
+
+	absorption = selected_params['absorption']
+	max_order = selected_params['max_order']
+	actual_rt60 = float(selected_rt60_key.replace('s', ''))
+
+	dims_str = json_path.stem.replace('m', '').split('_')
+	room_dim = [float(dims_str[0]), float(dims_str[1]), float(dims_str[2])]
+
+	# 3. Pyroomacoustics Roomオブジェクトの生成
+	try:
+		room = pa.ShoeBox(
+			room_dim,
+			fs=SAMPLING_RATE,
+			max_order=max_order,
+			materials=pa.Material(absorption)
+		)
+	except ValueError as e:
+		tqdm.write(f"警告: Room生成に失敗 {room_dim}, {absorption}. スキップ。 ({e})")
+		return
+
+	# 4. マイクと音源の配置
+	room_center = np.array(room_dim) / 2.0
+	mic_coords = rec_util.get_mic_array(config['microphone'], room_center)
+
+	speech_pos_list = rec_util.get_source_positions(
+		config['speech_source'], mic_coords[:, 0]  # アレイ中心（マイク0）を基準
+	)
+	noise_pos_list = rec_util.get_source_positions(
+		config['noise_source'], mic_coords[:, 0]
+	)
+
+	# 5. RIR計算
+	# (音源1:話者, 音源2:ノイズ1, ...)
+	rir_dict = rec_util.compute_rirs(room, mic_coords, speech_pos_list, noise_pos_list)
+
+	# (現在は話者1, ノイズ1を想定)
+	rir_speech = rir_dict['rir_speech'][0]  # (C, N_rir)
+	rir_noise = rir_dict['rir_noise'][0]  # (C, N_rir)
+
+	# 6. 音響特徴量の計算
+	# (最初のチャンネルのRIRを使用)
+	measured_rt60 = room.measure_rt60()[0, 0]  # 計測RT60
+	c50 = rec_util.calculate_c50(rir_speech[0])
+	d50 = rec_util.calculate_d50(rir_speech[0])
+
+	# 7. メタデータの保存
+	metadata_path = room_output_dir / "metadata.json"
+	room_metadata = {
+		"room_id": room_id,
+		"precomputed_json": json_path.name,
+		"room_dim": room_dim,
+		"target_rt60": actual_rt60,
+		"measured_rt60": measured_rt60,
+		"c50": c50,
+		"d50": d50,
+		"absorption": absorption,
+		"max_order": max_order,
+		"mic_config": config['microphone'],
+		"speech_source_config": config['speech_source'],
+		"noise_source_config": config['noise_source'],
+		"files": []
+	}
+
+	# 8. ファイル（畳み込み）のループ
+	output_flags = config['output_files']
+
+	for speech_filepath in tqdm(room_speech_files, desc=f"Room {room_id:04d}", leave=False):
+		try:
+			# 8a. 音声・ノイズの選択
+			clean_signal, _ = rec_util.load_wav(speech_filepath)
+
+			noise_filepath = Path(random.choice(all_noise_files))
+			noise_signal, _ = rec_util.load_wav(noise_filepath)
+
+			# 8b. SNRの選択
+			snr_db = rec_util.get_random_value(config['mixing_params']['snr_range_db'])
+
+			# 8c. 畳み込みと混合
+			signal_dict = rec_util.convolve_and_mix(
+				clean_signal,
+				noise_signal,
+				rir_speech,  # (C, N_rir)
+				rir_noise,  # (C, N_rir)
+				snr_db
+			)
+
+			# 8d. ファイルの保存
+			base_filename = f"{speech_filepath.stem}_room{room_id:04d}_snr{snr_db:.0f}"
+
+			# (チャンネル数が1の場合は (N,) に, 複数の場合は (N, C) に)
+			def shape_output(data):
+				if data.shape[1] == 1:
+					return data[:, 0]
+				return data
+
+			if output_flags['save_mixture']:
+				rec_util.save_wav(
+					room_output_dir / "mixture" / f"{base_filename}_mix.wav",
+					shape_output(signal_dict['mixture'])
+				)
+			if output_flags['save_reverberant_speech']:
+				rec_util.save_wav(
+					room_output_dir / "reverb_speech" / f"{base_filename}_reverb.wav",
+					shape_output(signal_dict['reverberant_speech'])
+				)
+			if output_flags['save_reverberant_noise']:
+				rec_util.save_wav(
+					room_output_dir / "reverb_noise" / f"{base_filename}_noise.wav",
+					shape_output(signal_dict['reverberant_noise'])
+				)
+			if output_flags['save_clean_speech']:
+				rec_util.save_wav(
+					room_output_dir / "clean_speech" / f"{base_filename}_clean.wav",
+					shape_output(signal_dict['clean_speech'])
+				)
+
+			# 8e. ファイルメタデータの記録
+			file_meta = {
+				"filename_base": base_filename,
+				"clean_source_file": str(speech_filepath.relative_to(config['base_paths']['speech_data_root'])),
+				"noise_source_file": str(noise_filepath.relative_to(config['base_paths']['noise_data_root'])),
+				"snr_db": snr_db
+			}
+			room_metadata["files"].append(file_meta)
+
+		except Exception as e:
+			tqdm.write(f"❌ ファイル処理中にエラー: {speech_filepath.name} ({e})", file=sys.stderr)
+
+	# 9. 部屋の全メタデータを保存
+	try:
+		room_output_dir.mkdir(parents=True, exist_ok=True)
+		with open(metadata_path, "w") as f:
+			json.dump(room_metadata, f, indent=4, cls=NumpyDecimalEncoder)
+	except Exception as e:
+		tqdm.write(f"❌ メタデータ保存中にエラー: {metadata_path} ({e})", file=sys.stderr)
+
+
+if __name__ == "__main__":
+	parser = argparse.ArgumentParser(
+		description="事前計算されたパラメータとYAML設定に基づき、音響データセットを高速に生成します。"
+	)
+	parser.add_argument(
+		'--config',
+		type=str,
+		required=True,
+		help="データセット生成の仕様を定義したYAMLファイルのパス (例: configs/dataset_hybrid_v1.yml)"
+	)
+	args = parser.parse_args()
+
+	generate_dataset(args.config)

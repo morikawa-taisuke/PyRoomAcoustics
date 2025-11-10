@@ -1,276 +1,339 @@
+# src/mymodule/rec_utility.py
+
 import numpy as np
-import itertools
-import random
 import pyroomacoustics as pa
+import soundfile as sf
+import yaml
+import random
+from pathlib import Path
 
-from mymodule import reverb_feater as rev_feat, rec_config as rec_conf
-from . import audio
+# --- (旧: rec_config.py の内容) ---
+# simulation.py または constants.py に移動することを推奨
+SAMPLING_RATE = 16000
 
-def set_mic_coordinate(center, num_channels, distance):
-    """ アレイマイクの各マイクの座標を決める (線形アレイ)
-    :param center: マイクの中心点
-    :param num_channels: チャンネル数
-    :param distance: マイク間の距離
-    :return coordinate: マイクの座標
+
+# --- (旧: reverb_feater.py の内容) ---
+# audio.py に移動することを推奨
+def calculate_c50(rir, fs=SAMPLING_RATE):
+	t_50ms = int(0.050 * fs)
+	energy = rir ** 2
+	e_early = np.sum(energy[:t_50ms])
+	e_late = np.sum(energy[t_50ms:])
+	if e_late > 0:
+		c50 = 10 * np.log10(e_early / e_late)
+	else:
+		c50 = np.inf
+	return c50
+
+
+def calculate_d50(rir, fs=SAMPLING_RATE):
+	t_50ms = int(0.050 * fs)
+	energy = rir ** 2
+	e_early = np.sum(energy[:t_50ms])
+	e_total = np.sum(energy)
+	if e_total > 0:
+		d50 = (e_early / e_total) * 100
+	else:
+		d50 = 0.0
+	return d50
+
+
+# ===================================================================
+# === ▼▼▼ 新しいワークフローのための関数群 ▼▼▼ ===
+# ===================================================================
+
+# --- 1. 設定ファイル・I/O 関連 ---
+
+def load_yaml_config(config_path):
+	"""YAML設定ファイルを読み込む"""
+	with open(config_path, 'r', encoding='utf-8') as f:
+		config = yaml.safe_load(f)
+	return config
+
+
+def load_wav(filepath, sr=SAMPLING_RATE):
+	"""
+    soundfileを使用してWAVファイルを読み込む
+    (リサンプリングとモノラル化も行う)
     """
-    # マイクロホンアレイのマイク配置
-    if center.ndim == 2:
-        mic_alignments = np.array([[0.0 + distance * (i + (1 - num_channels) / 2), 0.0] for i in range(num_channels)])
-    else:
-        mic_alignments = np.array([[0.0 + distance * (i + (1 - num_channels) / 2), 0.0, 0.0] for i in range(num_channels)])
-    # マイクロホンアレイの座標
-    coordinate = mic_alignments.T + center[:, None]
+	data, loaded_sr = sf.read(filepath, dtype='float32', always_2d=True)
 
-    return coordinate
+	# モノラルに変換
+	if data.shape[1] > 1:
+		data = np.mean(data, axis=1)
+	else:
+		data = data[:, 0]
+
+	# リサンプリング (TODO: 必要ならresampyなどを追加)
+	if loaded_sr != sr:
+		raise NotImplementedError(
+			f"Resampling required: {filepath} ({loaded_sr}Hz) != target ({sr}Hz)"
+		)
+
+	return data, sr
 
 
-def set_circular_mic_coordinate(center, num_channels:int, radius, rotate:bool=False):
-    """ アレイマイクの各マイクの座標を決める (円形アレイ)
-    :param center: マイクの中心点
-    :param num_channels: チャンネル数
-    :param radius: アレイマイクの半径
-    :param rotate: 回転の有無 回転しない場合,話者に対して十字に配置, した場合,Xのように配置する_
-    :return coordinate: マイクの座標
+def save_wav(filepath: Path, data: np.ndarray, sr=SAMPLING_RATE):
+	"""
+    soundfileを使用してWAVファイルを保存する (マルチチャンネル対応)
+    (N,) または (N, C) のNumpy配列を受け取る
     """
-    if not rotate:
-        angle_list = np.linspace(0, 2*np.pi, num_channels, endpoint=False)	# 回転なし
-    else:
-        angle_list = np.linspace(0+np.pi/4, 2*np.pi+np.pi/4, num_channels, endpoint=False)	# 45°回転
-
-    if len(center) == 2:
-        x_points = center[0] + radius * np.cos(angle_list)
-        y_points = center[1] + radius * np.sin(angle_list)
-        coordinate = np.array([x_points.tolist(), y_points.tolist()])
-    else:
-        x_points = center[0] + radius * np.cos(angle_list)
-        y_points = center[1] + radius * np.sin(angle_list)
-        z_points = np.full(num_channels, center[2])
-        coordinate = np.array([x_points.tolist(), y_points.tolist(), z_points.tolist()])
-
-    return coordinate
+	filepath.parent.mkdir(parents=True, exist_ok=True)
+	sf.write(filepath, data, sr)
 
 
-
-def set_souces_coordinate(doas, distance, mic_center):
-    """音源の座標を計算する
- 
-    :param doas: 音源の到来方向
-    :param distance: 音源からアレイマイクの中心点までの距離
-    :param mic_center: アレイマイクの中心点
-    :return :
+def get_file_list(dir_path: Path, ext: str = '.wav') -> list[Path]:
+	"""
+    指定したディレクトリ内の全ての .wav ファイルを再帰的に検索する
+    (my_func.py の rglob 版)
     """
-    souces_coordinate = np.zeros((3, doas.shape[0]), dtype=doas.dtype)
-    souces_coordinate[0, :] = np.cos(doas[:, 1]) * np.sin(doas[:, 0])
-    souces_coordinate[1, :] = np.sin(doas[:, 1]) * np.sin(doas[:, 0])
-    souces_coordinate[2, :] = np.cos(doas[:, 0])
-    souces_coordinate *= distance
-    souces_coordinate += mic_center[:, None]
-    return souces_coordinate
+	if not dir_path.is_dir():
+		raise FileNotFoundError(f"ディレクトリが見つかりません: {dir_path}")
+	return sorted(list(dir_path.rglob(f"*{ext}")))
 
 
-def set_souces_coordinate2(doas, distance, mic_center):
-    """音源の座標を計算する
- 
-    :param doas: 音源の到来方向 [2,音源数]
-    :param distance: 音源からアレイマイクの中心点までの距離
-    :param mic_center: アレイマイクの中心点
-    :return :
+# --- 2. 座標計算・ランダム化 関連 ---
+
+def get_random_value(param):
+	"""
+    [min, max] のリストからランダムな値を取得する
+    min == max の場合は固定値として返す
     """
-    souces_coordinate = np.zeros((3, doas.shape[0]), dtype=doas.dtype)
-    souces_coordinate[0, :] = np.cos(doas[:, 1]) * np.sin(doas[:, 0])  # x
-    souces_coordinate[1, :] = np.sin(doas[:, 1]) * np.sin(doas[:, 0])  # y
-    souces_coordinate[2, :] = np.cos(doas[:, 0])  # z
-    for idx in range(doas.shape[0]):
-        souces_coordinate[:, idx] *= distance[idx]
-    souces_coordinate += mic_center[:, None]
-    return souces_coordinate
+	if isinstance(param, (list, tuple)) and len(param) == 2:
+		return random.uniform(param[0], param[1])
+	# スカラー値の場合はそのまま返す
+	elif isinstance(param, (int, float)):
+		return param
+	else:
+		raise ValueError(f"不正な範囲指定です: {param}")
 
 
-def nantoka(room_dim):
-    volume = np.prod(room_dim)
-    edgs_combination = itertools.combinations(room_dim, 2)
-    area = [l1 * l2 for l1, l2 in edgs_combination]
-    sphere = 2 * np.sum(area)
-    sab_coef = 24
-
-
-def search_reverb_sec(reverb_sec, channel=1, angle=np.pi):
-    reverb = reverb_sec
-    cnt = 0
-    room_dim = np.r_[10.0, 7.0, 3.0]
-    """ 音源の読み込み """
-    target_data = audio.load_wave_data(f"./sample_data/JA01F049.wav")
-    noise_data = target_data
-    wave_data = []  # 1つの配列に格納
-    wave_data.append(target_data)
-    wave_data.append(noise_data)
-    mic_center = np.r_[3.0, 3.0, 1.2]  # アレイマイクの中心[x,y,z](m)
-    num_channels = channel  # マイクの個数(チャンネル数)
-    distance = 0.1  # 各マイクの間隔(m)
-    mic_codinate = set_mic_coordinate(center=mic_center,
-                                               num_channels=num_channels,
-                                               distance=distance)  # 各マイクの座標
-    doas = np.array([
-        [np.pi/2., np.pi/2],
-        [np.pi/2., angle]
-    ])  # 音源の方向[仰角, 方位角](ラジアン)
-    distance = [0.5, 0.7]  # 音源とマイクの距離(m)
-
-    max_order = 0   # 初期化
-    e_absorption = 0    # 初期化
-    rt60 = 0    # 初期化
-    while cnt < 100:   # 試行回数が100以上の時にループを抜ける
-        e_absorption, max_order = pa.inverse_sabine(reverb, room_dim)  # Sabineの残響式から壁の吸収率と反射上限回数を決定
-        room = pa.ShoeBox(room_dim, fs=rec_conf.sampling_rate, max_order=max_order, absorption=e_absorption)    # 部屋の作成
-
-        """ 部屋にマイクを設置 """
-        room.add_microphone_array(pa.MicrophoneArray(mic_codinate, fs=room.fs))
-        """ 各音源の座標 """
-        source_codinate = set_souces_coordinate2(doas, distance, mic_center)
-        """ 各音源を部屋に追加する """
-        for idx in range(2):
-            wave_data[idx] /= np.std(wave_data[idx])
-            room.add_source(source_codinate[:, idx], signal=wave_data[idx])
-
-        room.simulate() # シミュレーション
-        rt60 = room.measure_rt60()  # 残響時間の取得
-        round_rt60 = round(np.mean(rt60), 3)    # 有効数字3桁で丸める
-        if round_rt60 >= reverb_sec:   #
-            break
-        cnt += 1
-        reverb += 0.01
-    print(f"max_order:{max_order}\ne_absorption:{e_absorption}")
-    print(f"rt60={np.mean(rt60)}")
-    return e_absorption, max_order
-
-
-def create_random_room_shoebox(
-        room_dim_range=((3, 8), (3, 8), (2.5, 4)),
-        rt60_range=(0.1, 1.0),
-        fs=16000
-):
+def spherical_to_cartesian(azimuth_deg, elevation_deg, distance):
+	"""
+    極座標（度数法）をデカルト座標に変換する
+    (pyroomacousticsの規約: azimuthはX軸からY軸方向, elevationはXY平面からZ軸方向)
     """
-    ランダムなパラメータでShoeBoxルームを作成する
-    (new_signal_noise.pyから切り出し)
+	azimuth_rad = np.deg2rad(azimuth_deg)
+	elevation_rad = np.deg2rad(elevation_deg)
 
-    Args:
-        room_dim_range (tuple): (x_range, y_range, z_range)
-        rt60_range (tuple): (min, max)
-        fs (int): サンプリング周波数
+	x = distance * np.cos(elevation_rad) * np.cos(azimuth_rad)
+	y = distance * np.cos(elevation_rad) * np.sin(azimuth_rad)
+	z = distance * np.sin(elevation_rad)
+	return np.array([x, y, z])
+
+
+def get_mic_array(mic_config, room_center):
+	"""
+    YAML設定からマイクアレイの座標を生成する
+    """
+	shape = mic_config['array']['shape']
+	channels = mic_config['array']['channels']
+
+	# 1. アレイ中心位置の決定
+	if mic_config['position_strategy'] == 'fixed_cartesian':
+		center_pos = np.array(mic_config['position_coords'])
+	elif mic_config['position_strategy'] == 'center':
+		center_pos = room_center
+	else:
+		# TODO: 'random_area' などの実装
+		raise NotImplementedError(f"未実装のマイク配置: {mic_config['position_strategy']}")
+
+	# 2. アレイ形状の生成
+	if shape == 'single':
+		if channels != 1:
+			print(f"警告: shape='single' のため、channels=1 に強制します。")
+		return center_pos.reshape(3, 1)  # (3, 1) の形状
+
+	elif shape == 'linear':
+		spacing = mic_config['array']['spacing']
+		# (旧: rec_utility.py の set_mic_coordinate)
+		mic_coords = pa.linear_2D_array(
+			center=[center_pos[0], center_pos[1]],
+			M=channels,
+			phi=0,  # X軸に平行
+			d=spacing
+		)
+		# 3Dに拡張
+		mic_coords_3d = np.vstack([mic_coords, np.full(channels, center_pos[2])])
+		return mic_coords_3d  # (3, M) の形状
+
+	elif shape == 'circular':
+		diameter = mic_config['array']['diameter']
+		radius = diameter / 2.0
+		# (旧: rec_utility.py の set_circular_mic_coordinate)
+		mic_coords = pa.circular_2D_array(
+			center=[center_pos[0], center_pos[1]],
+			M=channels,
+			phi0=0,
+			radius=radius
+		)
+		# 3Dに拡張
+		mic_coords_3d = np.vstack([mic_coords, np.full(channels, center_pos[2])])
+		return mic_coords_3d  # (3, M) の形状
+
+	else:
+		raise ValueError(f"未対応のアレイ形状: {shape}")
+
+
+def get_source_positions(source_config, mic_center):
+	"""
+    YAML設定から音源の座標リストを生成する
+    """
+	strategy = source_config['position_strategy']
+	count = get_random_value(source_config.get('count_range', [1, 1]))
+
+	positions = []
+	for _ in range(int(count)):
+		if strategy == 'fixed_spherical':
+			params = source_config['params']
+			pos_relative = spherical_to_cartesian(
+				params['azimuth'], params['elevation'], params['distance']
+			)
+
+		elif strategy == 'random_spherical_range':
+			params = source_config['params']
+			azimuth = get_random_value(params['azimuth_range'])
+			elevation = get_random_value(params['elevation_range'])
+			distance = get_random_value(params['distance_range'])
+			pos_relative = spherical_to_cartesian(azimuth, elevation, distance)
+
+		elif strategy == 'random_area':
+			# (旧: new_signal_noise.py のロジック)
+			# TODO: room_dim を引数で受け取る必要がある
+			raise NotImplementedError("random_area は room_dim が必要なため未実装")
+
+		else:
+			raise ValueError(f"未対応の音源配置: {strategy}")
+
+		# マイク中心からの相対座標 -> 部屋の絶対座標
+		positions.append(mic_center + pos_relative)
+
+	return positions  # [np.array([x,y,z]), ...] のリスト
+
+
+# --- 3. Pyroomacoustics 処理 関連 ---
+
+def compute_rirs(room: pa.ShoeBox, mic_coords: np.ndarray,
+                 speech_pos_list: list, noise_pos_list: list):
+	"""
+    Roomオブジェクトにマイクと音源を配置し、RIRを計算する
 
     Returns:
-        tuple: (room, room_dim, rt60_target, e_absorption, max_order)
+        dict: {'rir_speech': (M, C, N), 'rir_noise': (M, C, N)}
+              M=音源数, C=チャンネル数, N=サンプル数
     """
-    # ランダムな部屋のパラメータを生成
-    room_dim = np.array([
-        random.uniform(room_dim_range[0][0], room_dim_range[0][1]),
-        random.uniform(room_dim_range[1][0], room_dim_range[1][1]),
-        random.uniform(room_dim_range[2][0], room_dim_range[2][1])
-    ])
+	# マイクを設置
+	room.add_microphone_array(mic_coords)
 
-    # Sabineの残響式から吸収率と反射上限回数を決定
-    rt60_target = random.uniform(rt60_range[0], rt60_range[1])
-    e_absorption, max_order = pa.inverse_sabine(rt60_target, room_dim)
+	# 音源を設置
+	all_sources = speech_pos_list + noise_pos_list
+	for pos in all_sources:
+		room.add_source(pos)
 
-    # 部屋の作成
-    room = pa.ShoeBox(
-        room_dim,
-        fs=fs,
-        max_order=max_order,
-        materials=pa.Material(e_absorption)
-    )
+	# RIR計算
+	room.compute_rir()
 
-    return room, room_dim, rt60_target, e_absorption, max_order
+	# RIRを分離
+	num_speech = len(speech_pos_list)
 
+	# room.rir は [(C, N), (C, N), ...] (音源数Mのリスト)
+	# (M, C, N) の形状にスタックする
+	all_rirs = np.array(room.rir)
 
-def compute_rir_and_features(room, mic_coordinate, source_pos_signal, source_pos_noise):
-    """
-    部屋にマイクと音源を設置し、RIRと音響特徴量を計算する
-    (new_signal_noise.pyから切り出し)
+	rir_dict = {
+		'rir_speech': all_rirs[:num_speech],
+		'rir_noise': all_rirs[num_speech:]
+	}
 
-    Args:
-        room (pa.ShoeBox): pyroomacoustics の room オブジェクト
-        mic_coordinate (np.ndarray): マイク座標
-        source_pos_signal (np.ndarray): 目的音源の座標
-        source_pos_noise (np.ndarray): 雑音音源の座標
-
-    Returns:
-        tuple: (rir_signal, rir_noise, rt60, c50, d50)
-    """
-    # マイクの設置
-    room.add_microphone_array(pa.MicrophoneArray(mic_coordinate, fs=room.fs))
-
-    # 音源の追加
-    room.add_source(source_pos_signal)
-    room.add_source(source_pos_noise)
-
-    # RIRを計算
-    room.compute_rir()
-
-    # RIRは (マイク, 音源) のリストで返る
-    # マイク0, 音源0 (目的信号)
-    rir_signal = room.rir[0][0]
-    # マイク0, 音源1 (雑音)
-    rir_noise = room.rir[0][1]
-
-    # 物理的特徴量（RT60, C50, D50）を計算
-    # 目的信号のRIR (マイク0, 音源0) を使用
-    rt60 = room.measure_rt60()[0][0]
-    c50 = rev_feat.calculate_c50(rir_signal, fs=room.fs)
-    d50 = rev_feat.calculate_d50(rir_signal, fs=room.fs)
-
-    return rir_signal, rir_noise, rt60, c50, d50
+	return rir_dict
 
 
-def convolve_and_mix(clean_signal, noise_segment, rir_signal, rir_noise, snr):
-    """
+def get_wave_power(wave_data):
+	"""音源のパワーを計算する (旧: rec_utility.py)"""
+	# チャンネル全体で平均パワーを計算
+	return np.mean(wave_data ** 2)
+
+
+def get_scale_noise(signal_data, noise_data, snr_db):
+	"""指定したSNRに雑音の大きさを調整 (旧: rec_utility.py)"""
+	signal_power = get_wave_power(signal_data)
+	noise_power = get_wave_power(noise_data)
+
+	if noise_power < 1e-10:
+		return np.zeros_like(noise_data)
+
+	target_noise_power = signal_power / (10 ** (snr_db / 10))
+	noise_scale = np.sqrt(target_noise_power / noise_power)
+
+	return noise_data * noise_scale
+
+
+def convolve_and_mix(
+		clean_signal: np.ndarray,
+		noise_signal: np.ndarray,
+		rir_speech: np.ndarray,
+		rir_noise: np.ndarray,
+		snr_db: float
+) -> dict:
+	"""
     各信号とRIRを畳み込み、指定したSNRで混合する
-    (new_signal_noise.pyから切り出し)
+    (B案拡張: 複数の信号を辞書で返す)
 
     Args:
-        clean_signal (np.ndarray): モノラルクリーン音声 (N,)
-        noise_segment (np.ndarray): モノラル雑音 (N,)
-        rir_signal (np.ndarray): 目的信号用RIR
-        rir_noise (np.ndarray): 雑音用RIR
-        snr (float): 混合SNR [dB]
+        clean_signal (N,): モノラルクリーン音声
+        noise_signal (N_noise,): モノラルノイズ
+        rir_speech (C, N_rir): 話者用RIR (チャンネル, サンプル)
+        rir_noise (C, N_rir): ノイズ用RIR (チャンネル, サンプル)
+        snr_db (float): 混合SNR
 
     Returns:
-        np.ndarray: 混合後の音声信号 (M,)
+        dict: 各種信号 ( (N_out, C) のNumpy配列 )
     """
-    # RIRで畳み込み、残響付き信号を生成
-    reverb_signal = np.convolve(clean_signal, rir_signal, mode='full')[:len(clean_signal)]
-    reverb_noise = np.convolve(noise_segment, rir_noise, mode='full')[:len(noise_segment)]
 
-    # SNRを調整して結合
-    scaled_noise = audio.get_scale_noise(reverb_signal, reverb_noise, snr)
-    mixed_signal = reverb_signal + scaled_noise
+	# 1. 信号の長さを決定
+	target_len = len(clean_signal)
 
-    return mixed_signal
+	# 2. 雑音の長さを調整 (ランダムクロップ)
+	if len(noise_signal) <= target_len:
+		repeat_times = int(np.ceil(target_len / len(noise_signal)))
+		noise_signal_tiled = np.tile(noise_signal, repeat_times)
+	else:
+		noise_signal_tiled = noise_signal
 
+	start_noise = random.randint(0, len(noise_signal_tiled) - target_len)
+	noise_segment = noise_signal_tiled[start_noise: start_noise + target_len]
 
-# ----------------------------------------------------
+	# 3. 畳み込み (scipy.signal.fftconvolve を推奨するが、
+	#    process_audio2.py 同様の実装)
 
+	# (N,) -> (N, 1)
+	clean_signal_col = clean_signal[:, np.newaxis]
+	noise_segment_col = noise_segment[:, np.newaxis]
 
-if __name__ == "__main__":
-    print("\nrec_utility")
+	# (C, N_rir) -> (N_rir, C)
+	rir_speech_col = rir_speech.T
+	rir_noise_col = rir_noise.T
 
-    target_dir = ["./wave/sample_data/speech/JA/training_JA01/JA01F049.wav"]
-    noise_path = "./wave/sample_data/noise/hoth.wav"
-    for target_path in target_dir:
-        target_data = audio.load_wave_data(target_path)
-    noise_data = audio.load_wave_data(noise_path)
-    start = random.randint(0, len(noise_data) - len(target_data))
-    noise_data = noise_data[start: start + len(target_data)]
-    scale_nosie = audio.get_scale_noise(target_data, noise_data, 10)
+	# 畳み込み (fftconvolveが望ましいが、簡易的に np.convolve を使う)
+	# (N_out, C) の形状になる
+	from scipy.signal import fftconvolve
+	reverb_signal = fftconvolve(clean_signal_col, rir_speech_col, mode='full', axes=0)[:target_len]
+	reverb_noise = fftconvolve(noise_segment_col, rir_noise_col, mode='full', axes=0)[:target_len]
 
-    room_dim = np.r_[10, 10, 10]
-    doas = np.array([
-        [np.pi / 2., 0],
-        [np.pi / 2., np.pi]
-    ])
-    distance = [1., 2.]
-    mic_center = room_dim / 2.
-    source_codinate = set_souces_coordinate2(doas, distance, mic_center=mic_center)
-    print(f"source_codinate:{source_codinate}")
+	# 4. SNR調整
+	scaled_noise = get_scale_noise(reverb_signal, reverb_noise, snr_db)
 
-    print("rec_utility\n")
+	# 5. 混合
+	mixed_signal = reverb_signal + scaled_noise
+
+	# 6. 教師データ（クリーン）もチャンネル数と長さを合わせる
+	# (N,) -> (N, C)
+	num_channels = reverb_signal.shape[1]
+	clean_speech_target = np.tile(clean_signal_col, (1, num_channels))
+
+	return {
+		"mixture": mixed_signal,  # (N_out, C)
+		"reverberant_speech": reverb_signal,  # (N_out, C)
+		"reverberant_noise": scaled_noise,  # (N_out, C)
+		"clean_speech": clean_speech_target  # (N_out, C)
+	}
