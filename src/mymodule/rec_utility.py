@@ -82,7 +82,7 @@ def save_wav(filepath: Path, data: np.ndarray, sr=SAMPLING_RATE):
 	sf.write(filepath, data, sr)
 
 
-def get_file_list(dir_path: Path, ext: str = '.wav') -> list[Path]:
+def get_file_list(dir_path: Path, ext: str = '.wav'):
 	"""
     指定したディレクトリ内の全ての .wav ファイルを再帰的に検索する
     (my_func.py の rglob 版)
@@ -216,37 +216,86 @@ def get_source_positions(source_config, mic_center):
 def compute_rirs(room: pa.ShoeBox, mic_coords: np.ndarray,
                  speech_pos_list: list, noise_pos_list: list):
 	"""
-    Roomオブジェクトにマイクと音源を配置し、RIRを計算する
+	Roomオブジェクトにマイクと音源を配置し、RIRを計算する
+	(修正版: room.rir が [Mic][Source] の入れ子リストであると確定)
+	"""
 
-    Returns:
-        dict: {'rir_speech': (M, C, N), 'rir_noise': (M, C, N)}
-              M=音源数, C=チャンネル数, N=サンプル数
-    """
-	# マイクを設置
+	# (マイクと音源の追加ロジックは変更なし)
 	room.add_microphone_array(mic_coords)
 
-	# 音源を設置
 	all_sources = speech_pos_list + noise_pos_list
 	for pos in all_sources:
 		room.add_source(pos)
 
-	# RIR計算
 	room.compute_rir()
 
-	# RIRを分離
-	num_speech = len(speech_pos_list)
+	# ▼▼▼ 修正箇所 ▼▼▼
+	# room.rir は [Mic][Source] の入れ子リスト
+	all_rirs_list_by_mic = room.rir
 
-	# room.rir は [(C, N), (C, N), ...] (音源数Mのリスト)
-	# (M, C, N) の形状にスタックする
-	all_rirs = np.array(room.rir)
+	num_mics = len(all_rirs_list_by_mic)
+	num_speech = len(speech_pos_list)
+	num_noise = len(noise_pos_list)
+
+	# -----------------------------------------------------
+	# ご提案のあった「リストの転置 (リシェイプ)」を実行
+	# [Mic][Source] -> [Source][Mic] のリストに変換
+	# -----------------------------------------------------
+
+	# 話者RIRの転置
+	rir_speech_list = []
+	# (音源 0 から num_speech-1 までループ)
+	for s_idx in range(num_speech):
+		# この音源 (s_idx) のRIRを、全マイクから収集
+		rirs_for_this_source = []
+		max_len = 0
+		for m_idx in range(num_mics):
+			rir = all_rirs_list_by_mic[m_idx][s_idx]  # [Mic][Source] でアクセス
+			rirs_for_this_source.append(rir)
+			if len(rir) > max_len:
+				max_len = len(rir)
+
+		# (長さが異なる場合があるため、最長のRIRに合わせてパディング)
+		padded_rirs = []
+		for rir in rirs_for_this_source:
+			padded = np.zeros(max_len, dtype=rir.dtype)
+			padded[:len(rir)] = rir
+			padded_rirs.append(padded)
+
+		# 全マイク (C) のRIRをスタック -> (C, N) のNumpy配列
+		rir_speech_list.append(np.array(padded_rirs))
+
+	# ノイズRIRの転置
+	rir_noise_list = []
+	# (音源 num_speech から最後までループ)
+	for n_idx in range(num_noise):
+		s_idx = num_speech + n_idx  # 元のリストでのインデックス
+
+		rirs_for_this_source = []
+		max_len = 0
+		for m_idx in range(num_mics):
+			rir = all_rirs_list_by_mic[m_idx][s_idx]  # [Mic][Source] でアクセス
+			rirs_for_this_source.append(rir)
+			if len(rir) > max_len:
+				max_len = len(rir)
+
+		padded_rirs = []
+		for rir in rirs_for_this_source:
+			padded = np.zeros(max_len, dtype=rir.dtype)
+			padded[:len(rir)] = rir
+			padded_rirs.append(padded)
+
+		rir_noise_list.append(np.array(padded_rirs))
 
 	rir_dict = {
-		'rir_speech': all_rirs[:num_speech],
-		'rir_noise': all_rirs[num_speech:]
+		# 'rir_speech' は [ array(C, N_s0), array(C, N_s1), ... ] のリスト
+		'rir_speech': rir_speech_list,
+		# 'rir_noise' は [ array(C, N_n0), array(C, N_n1), ... ] のリスト
+		'rir_noise': rir_noise_list
 	}
+	# ▲▲▲ 修正箇所 ▲▲▲
 
 	return rir_dict
-
 
 def get_wave_power(wave_data):
 	"""音源のパワーを計算する (旧: rec_utility.py)"""
@@ -276,19 +325,19 @@ def convolve_and_mix(
 		snr_db: float
 ) -> dict:
 	"""
-    各信号とRIRを畳み込み、指定したSNRで混合する
-    (B案拡張: 複数の信号を辞書で返す)
+	各信号とRIRを畳み込み、指定したSNRで混合する
+	(修正版: ユーザー定義に基づき "noise_only" (clean + dry_noise) を生成)
 
-    Args:
-        clean_signal (N,): モノラルクリーン音声
-        noise_signal (N_noise,): モノラルノイズ
-        rir_speech (C, N_rir): 話者用RIR (チャンネル, サンプル)
-        rir_noise (C, N_rir): ノイズ用RIR (チャンネル, サンプル)
-        snr_db (float): 混合SNR
+	Args:
+		clean_signal (N,): モノラルクリーン音声
+		noise_signal (N_noise,): モノラルノイズ
+		rir_speech (C, N_rir): 話者用RIR (チャンネル, サンプル)
+		rir_noise (C, N_rir): ノイズ用RIR (チャンネル, サンプル)
+		snr_db (float): 混合SNR
 
-    Returns:
-        dict: 各種信号 ( (N_out, C) のNumpy配列 )
-    """
+	Returns:
+		dict: 各種信号 ( (N_out, C) のNumpy配列 )
+	"""
 
 	# 1. 信号の長さを決定
 	target_len = len(clean_signal)
@@ -303,8 +352,7 @@ def convolve_and_mix(
 	start_noise = random.randint(0, len(noise_signal_tiled) - target_len)
 	noise_segment = noise_signal_tiled[start_noise: start_noise + target_len]
 
-	# 3. 畳み込み (scipy.signal.fftconvolve を推奨するが、
-	#    process_audio2.py 同様の実装)
+	# 3. 畳み込み (scipy.signal.fftconvolve)
 
 	# (N,) -> (N, 1)
 	clean_signal_col = clean_signal[:, np.newaxis]
@@ -321,19 +369,35 @@ def convolve_and_mix(
 	reverb_noise = fftconvolve(noise_segment_col, rir_noise_col, mode='full', axes=0)[:target_len]
 
 	# 4. SNR調整
-	scaled_noise = get_scale_noise(reverb_signal, reverb_noise, snr_db)
+
+	# --- 4a. 混合音(mixture)用: 残響音声 vs 残響ノイズ
+	scaled_reverb_noise = get_scale_noise(reverb_signal, reverb_noise, snr_db)
+
+	# --- 4b. 雑音のみ(noise_only)用: クリーン音声 vs ドライノイズ
+	# (get_scale_noise はN次元配列対応なので (N,) 同士でもOK)
+	scaled_dry_noise = get_scale_noise(clean_signal, noise_segment, snr_db)
 
 	# 5. 混合
-	mixed_signal = reverb_signal + scaled_noise
+	# 混合音 (残響あり + 残響ありノイズ)
+	mixed_signal = reverb_signal + scaled_reverb_noise
 
-	# 6. 教師データ（クリーン）もチャンネル数と長さを合わせる
-	# (N,) -> (N, C)
+	# 雑音のみ付加 (クリーン + ドライノイズ)
+	# (N,) + (N,) = (N,)
+	noise_only_signal_mono = clean_signal + scaled_dry_noise
+
+	# 6. 出力形式 (N, C) に整形
 	num_channels = reverb_signal.shape[1]
+
+	# (N,) -> (N, C)
 	clean_speech_target = np.tile(clean_signal_col, (1, num_channels))
+
+	# (N,) -> (N, 1) -> (N, C)
+	noise_only_signal_col = noise_only_signal_mono[:, np.newaxis]
+	noise_only_target = np.tile(noise_only_signal_col, (1, num_channels))
 
 	return {
 		"mixture": mixed_signal,  # (N_out, C)
 		"reverberant_speech": reverb_signal,  # (N_out, C)
-		"reverberant_noise": scaled_noise,  # (N_out, C)
+		"noise_only": noise_only_target,  # (N_out, C) <- NEW
 		"clean_speech": clean_speech_target  # (N_out, C)
 	}
