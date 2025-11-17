@@ -1,12 +1,13 @@
-import argparse
-import decimal
-import itertools
-import json
-from pathlib import Path
-
 import pyroomacoustics as pa
-import yaml  # PyYAMLライブラリ
+import numpy as np
+import json
+import yaml
+import argparse
+from pathlib import Path
 from tqdm import tqdm
+import itertools
+import decimal
+import time  # (進捗確認用)
 
 
 # Pythonのfloat -> JSONのシリアライズで発生する微小な誤差を防ぐ
@@ -26,8 +27,7 @@ def load_yaml_config(config_path):
 
 def generate_range(range_config):
 	"""
-	[min, max, step] の設定から、np.arangeと同様のリストを生成する
-	(Decimalを使って浮動小数点数の誤差を回避する)
+	[min, max, step] の設定から、Decimalのリストを生成する
 	"""
 	min_val = decimal.Decimal(str(range_config[0]))
 	max_val = decimal.Decimal(str(range_config[1]))
@@ -41,6 +41,75 @@ def generate_range(range_config):
 	return values
 
 
+# ===================================================================
+# === ▼▼▼ 修正箇所 1: RT60探索関数の追加 ▼▼▼ ===
+# ===================================================================
+def find_parameters_for_rt60(
+		target_rt60: float,
+		room_dim: list,
+		fs: int,
+		tolerance: float = 0.01,  # 許容誤差 (±10ms)
+		max_trials: int = 50,  # 最大試行回数
+		step: float = 0.005  # 探索ステップ
+):
+	"""
+	目標のRT60（実測値）に一致する吸収率と反射回数を探索する
+	(rec_utility.py の search_reverb_sec のロジックを改良)
+	"""
+
+	current_target_rt60 = target_rt60
+
+	for _ in range(max_trials):
+		try:
+			# 1. 理論値の計算
+			e_absorption, max_order = pa.inverse_sabine(
+				rt60=current_target_rt60,
+				room_dim=room_dim
+			)
+
+			# 2. シミュレーションで実測
+			room = pa.ShoeBox(
+				room_dim,
+				fs=fs,
+				max_order=max_order,
+				materials=pa.Material(e_absorption)
+			)
+
+			# (計測のため、ダミーの音源とマイクを配置)
+			room.add_source([room_dim[0] / 2 - 0.1, room_dim[1] / 2, 1.5])
+			room.add_microphone([room_dim[0] / 2 + 0.1, room_dim[1] / 2, 1.5])
+
+			room.compute_rir()
+			measured_rt60 = np.mean(room.measure_rt60())
+
+			# 3. 誤差の確認
+			error = measured_rt60 - target_rt60
+
+			# 4. 許容誤差内であれば成功
+			if abs(error) <= tolerance:
+				return e_absorption, int(max_order)  # 成功
+
+			# 5. パラメータの更新
+			# (実測値が目標より小さい -> もっと響かせる(RT60を上げる)必要あり)
+			if error < 0:
+				current_target_rt60 += step
+			# (実測値が目標より大きい -> もっと吸音する(RT60を下げる)必要あり)
+			else:
+				# (ただし、補正幅はエラーの大きさに応じて小さくする)
+				correction = max(error * 0.1, step)  # 最小でもstep分は動かす
+				current_target_rt60 -= correction
+
+		except ValueError:
+			# 物理的に計算不可 (例: 部屋が小さすぎ/大きすぎ)
+			# このRT60は実現不可能として探索終了
+			return None
+
+	# 最大試行回数に達しても収束しなかった
+	return None
+
+
+# ===================================================================
+
 def precompute_parameters(config_path):
 	"""
 	設定ファイルに基づき、部屋のパラメータを事前計算してJSONに保存する
@@ -48,61 +117,72 @@ def precompute_parameters(config_path):
 	# 1. 設定の読み込み
 	config = load_yaml_config(config_path)
 	output_dir = Path(config['output_dir'])
+	fs = config['simulation_constants']['fs']
 
 	# 2. パラメータ範囲の生成
 	param_ranges = config['parameter_ranges']
 	room_xs = generate_range(param_ranges['room_dimensions']['x_m'])
 	room_ys = generate_range(param_ranges['room_dimensions']['y_m'])
 	room_zs = generate_range(param_ranges['room_dimensions']['z_m'])
-	rt60s = generate_range(param_ranges['rt60_sec']['value'])
+	rt60s_target = generate_range(param_ranges['rt60_sec']['value'])
 
 	print(f"計算対象の部屋の組み合わせ総数: {len(room_xs) * len(room_ys) * len(room_zs)}")
-	print(f"計算対象のRT60の総数: {len(rt60s)}")
+	print(f"計算対象のRT60の総数: {len(rt60s_target)}")
 	print(f"保存先: {output_dir.absolute()}")
 
-	# 3. 保存先ディレクトリの作成
 	output_dir.mkdir(parents=True, exist_ok=True)
 
-	# 4. 全組み合わせについてループ処理
-	# tqdmを使って進捗を表示
 	room_combinations = list(itertools.product(room_xs, room_ys, room_zs))
 
+	start_time = time.time()
+
+	# --- 部屋のループ ---
 	for (x, y, z) in tqdm(room_combinations, desc="Room Dimensions"):
 		room_dim = [float(x), float(y), float(z)]
-		output_data = {}  # この部屋の全RT60の結果を格納する辞書
+		output_data = {}
 
-		# 5. RT60ごとにパラメータを計算
-		for rt60_decimal in rt60s:
-			rt60_float = float(rt60_decimal)
+		# --- RT60のループ ---
+		# (tqdmをネストさせ、どのRT60を計算中か表示)
+		for rt60_decimal in tqdm(rt60s_target, desc=f"Room {x}x{y}x{z}", leave=False):
+			target_rt60_float = float(rt60_decimal)
 
-			try:
-				# pyroomacoustics の中核関数を呼び出す
-				e_absorption, max_order = pa.inverse_sabine(
-					rt60=rt60_float,
-					room_dim=room_dim
-				)
+			# ===================================================================
+			# === ▼▼▼ 修正箇所 2: 探索関数の呼び出しとエラー処理 ▼▼▼ ===
+			# ===================================================================
 
-				# JSONに保存するデータを整形
+			# 探索関数を呼び出す
+			result = find_parameters_for_rt60(
+				target_rt60=target_rt60_float,
+				room_dim=room_dim,
+				fs=fs
+			)
+
+			# (ご要望2)
+			# resultが None (計算不可 or 収束失敗) でない場合のみ、
+			# JSONにデータを書き込む
+			if result is not None:
+				e_absorption, max_order = result
+
 				# (rt60_keyは "0.50s" のように小数点以下2桁で統一)
 				rt60_key = f"{rt60_decimal:.2f}s"
 				output_data[rt60_key] = {
 					"absorption": e_absorption,
-					"max_order": int(max_order)  # max_orderは整数
+					"max_order": max_order
 				}
-
-			except ValueError as e:
-				# (例: 部屋が小さすぎてRT60が達成不可能な場合)
-				tqdm.write(f"警告: {room_dim} @ {rt60_float}s で計算エラー: {e}")
+		# (result が None の場合は何もせず、tqdm.writeも出さない)
+		# ===================================================================
 
 		# 6. 部屋ごと（Xm_Ym_Zm.json）にJSONファイルとして保存
-		filename = f"{x:.1f}m_{y:.1f}m_{z:.1f}m.json"
-		filepath = output_dir / filename
+		# (ただし、中身が空でない場合のみ)
+		if output_data:  # 1つでも有効なRT60があれば保存
+			filename = f"{int(x)}m_{int(y)}m_{int(z)}m.json"
+			filepath = output_dir / filename
 
-		with open(filepath, 'w', encoding='utf-8') as f:
-			# DecimalEncoderを使用してJSONを保存
-			json.dump(output_data, f, indent=4, cls=DecimalEncoder)
+			with open(filepath, 'w', encoding='utf-8') as f:
+				json.dump(output_data, f, indent=4, cls=DecimalEncoder)
 
-	print("\n🎉 事前計算が完了しました。")
+	end_time = time.time()
+	print(f"\n🎉 事前計算が完了しました。(合計時間: {end_time - start_time:.2f} 秒)")
 
 
 if __name__ == "__main__":
@@ -113,8 +193,8 @@ if __name__ == "__main__":
 		'--config',
 		type=str,
 		# required=True,
-		default='./../config/sample/precompute_params.yml',
-		help="事前計算の範囲を定義したYAMLファイルのパス (例: configs/sample/precompute_params.yml)"
+		default="./../config/sample/precompute_params.yml",
+		help="事前計算の範囲を定義したYAMLファイルのパス (例: configs/precompute_params.yml)"
 	)
 	args = parser.parse_args()
 
