@@ -4,101 +4,80 @@ base_paths:
   precomputed_params_dir: "./precomputed_params"
 
   # 入力データ
-  speech_data_root: "./sound_data/sample_data/speech/subset_DEMAND"
-  noise_data_root: "./sound_data/sample_data/noise/DEMAND_types" # hoth.wav ではなく、ノイズのディレクトリを指定
+  speech_data_root: "C:/Users/kataoka-lab/Desktop/sound_data/sample_data/speech/DEMAND"
+  noise_data_root: "C:/Users/kataoka-lab/Desktop/sound_data/sample_data/noise/DEMAND_16kHz" # hoth.wav ではなく、ノイズのディレクトリを指定
 
   # 出力データ
-  output_data_root: "./sound_data/mix_data"
+  output_data_root: "C:/Users/kataoka-lab/Desktop/sound_data/mix_data"
 
 # 処理するスプリット
-splits: ["train", "test"]
+splits: ["train", "test", "val"]
 
 # ----------------------------------------------------
 
 # 2. 🌍 シミュレーションと生成の設定
 domain_generation_settings:
-  output_name: "dataset_hybrid_v1" # 出力ディレクトリ名
+  output_name: "dataset_1ch_random_rt60_snr_v1" # この実験用の出力名
 
-  # スプリットごとの部屋（ドメイン）数
-  # (testは train とは異なる部屋/RIRが生成される)
+  # 部屋のパラメータJSONをランダムに選択
+  room_selection:
+    strategy: 'random'
+
+  # --- ▼ ユーザー指定 (RT60) ▼ ---
+  rt60_range: [0.3, 0.8] # 0.3s から 0.8s の間でランダムに選択
+
+  # 部屋（ドメイン）の数 (学習用50, 検証用5, テスト用10)
   num_rooms_per_split:
     train: 50
+    val: 5
     test: 10
 
-  # 1部屋（RIR）あたりに生成するファイル数
-  num_files_per_room: 100
-
-  # --- (ご要望: どちらにも設定したい) ---
-  # [min, max] で指定。min == max なら「固定」
-
-  # 部屋のサイズ: precomputed_params_dir からランダムに選択されるため、ここでは指定不要
-
-  # 残響時間 (sec):
-  # precomputed_params_dir のJSONファイル群から、この範囲内のRT60キーをランダムに選択
-  rt60_range: [0.3, 0.8]
+  # データ拡張なし (教師データ数 / 部屋数 で自動計算)
+  num_files_per_room: 'auto'
 
 # ----------------------------------------------------
 
-# 3. 🎤 マイクの配置 (シミュレーションごと)
+# 3. 🎤 マイクの配置
 microphone:
-  # --- (ご要望: 固定化したいもの) ---
-  position_strategy: 'fixed_cartesian'   # 'fixed_cartesian' (デカルト座標固定)
-  position_coords: [4.0, 3.0, 1.5]     # [x, y, z] (m)
+  # --- ▼ ユーザー指定 (マイク座標) ▼ ---
+  # 'center' を指定すると、スクリプトが部屋の中心座標を自動計算します
+  position_strategy: 'center'
 
   array:
-    # 'linear', 'circular', 'single' (1chの場合)
-    shape: 'linear'
-    channels: 4      # チャンネル数
-    spacing: 0.05    # (linearの場合) マイク間隔 (m)
-    # diameter: 0.1  # (circularの場合) 直径 (m)
+    # --- ▼ ユーザー指定 (1ch) ▼ ---
+    shape: 'single'
+    channels: 1
 
 # ----------------------------------------------------
 
 # 4. 🔉 音源の配置 (シミュレーションごと)
-speech_source: # 話者
-  # --- (ご要望: 固定化したいもの) ---
-  position_strategy: 'fixed_spherical' # (マイクからの極座標固定)
+speech_source:
+  position_strategy: 'fixed_spherical' # <-- 固定戦略に変更
+  params:
+    azimuth: 90      # 水平角 0度 (マイク正面)
+    elevation: 0    # 仰角 0度 (マイク水平)
+    distance: 1.5   # 距離 1.5m
+noise_source:
+  count_range: [1, 1] # ノイズ源は1つ
+  position_strategy: 'fixed_spherical' # <-- 固定戦略に変更
   params:
     azimuth: 0      # 水平角 0度 (マイク正面)
     elevation: 0    # 仰角 0度 (マイク水平)
     distance: 1.5   # 距離 1.5m
-
-noise_source: # 雑音
-  count_range: [1, 1] # 雑音源の数 (1個に固定)
-
-  # --- (ご要望: どちらにも設定したい) ---
-  position_strategy: 'random_spherical_range' # (極座標ランダム)
-  params:
-    azimuth_range: [-180, 180]   # 水平角 (全方位)
-    elevation_range: [-10, 10]   # 仰角 (ほぼ水平)
-    distance_range: [1.0, 4.0]   # 距離 (1m ~ 4m)
-
 # ----------------------------------------------------
 
 # 5. 🎛️ 混合パラメータ (ファイルごと)
 mixing_params:
   # --- (ご要望: どちらにも設定したい) ---
-  snr_range_db: [5, 20] # ランダム (5dB ~ 20dB)
+  snr_range_db: [-5, 10] # ランダム (5dB ~ 20dB)
                         # 固定する場合: [10, 10] (旧)
 
 # ----------------------------------------------------
 
 # 6. 💾 保存設定 (B案拡張)
 output_files:
-  # どの音声ファイルをWAVとして保存するか
-  # これにより、B案でもA案 のように複数のデータセットを
-  # 同時に（しかしRIRファイル無しで）生成できる
-
-  # 混合音 (入力)
-  save_mixture: true
-
-  # 残響のみ (比較用)
-  save_reverberant_speech: true
-
-  # 雑音＋残響 (比較用)
-  save_reverberant_noise: true
-
-  # クリーン（ドライ）音源 (教師データ)
-  save_clean_speech: true
-
-  # (RIRは保存しない)
+  # どの音声ファイルをWAVとして保存するかこれにより、B案でもA案 のように複数のデータセットを同時に（しかしRIRファイル無しで）生成できる
+  save_mixture: true              # 雑音と残響の両方を付加した音声
+  save_reverberant_speech: true   # 残響のみを付加した音声
+  save_clean_speech: true         # 教師データ
+  save_noise_only: true           # 雑音のみを付加した音声
