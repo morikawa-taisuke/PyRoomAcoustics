@@ -370,7 +370,7 @@ def convolve_and_mix(
 
 	# 4. SNR調整
 
-	# --- 4a. 混合音(mixture)用: 残響音声 vs 残響ノイズ
+	# --- 4a. 混合音(noise_reverb)用: 残響音声 vs 残響ノイズ
 	scaled_reverb_noise = get_scale_noise(reverb_signal, reverb_noise, snr_db)
 
 	# --- 4b. 雑音のみ(noise_only)用: クリーン音声 vs ドライノイズ
@@ -396,8 +396,8 @@ def convolve_and_mix(
 	noise_only_target = np.tile(noise_only_signal_col, (1, num_channels))
 
 	return {
-		"mixture": mixed_signal,  # (N_out, C)
-		"reverberant_speech": reverb_signal,  # (N_out, C)
+		"noise_reverb": mixed_signal,  # (N_out, C)
+		"reverb_only": reverb_signal,  # (N_out, C)
 		"noise_only": noise_only_target,  # (N_out, C) <- NEW
 		"clean_speech": clean_speech_target  # (N_out, C)
 	}
