@@ -6,6 +6,7 @@ from pathlib import Path
 import pandas as pd
 from tqdm import tqdm
 import sys
+import os
 
 def create_dataset_csvs(dataset_root: Path):
     """
@@ -14,8 +15,8 @@ def create_dataset_csvs(dataset_root: Path):
 
     Args:
         dataset_root (Path): new_signal_noise.pyで生成されたデータセットのルートディレクトリ。
-        output_filename (str): 出力するCSVファイル名。
     """
+    dataset_root = dataset_root.resolve() # ルートパスを絶対パスに変換
     if not dataset_root.is_dir():
         print(f"❌ エラー: データセットディレクトリが見つかりません: {dataset_root}", file=sys.stderr)
         sys.exit(1)
@@ -36,7 +37,7 @@ def create_dataset_csvs(dataset_root: Path):
             with open(json_path, 'r', encoding='utf-8') as f:
                 room_meta = json.load(f)
 
-            room_output_dir = json_path.parent
+            room_output_dir = json_path.parent.resolve() # ディレクトリも絶対パスで扱う
             split = room_output_dir.parent.name # train, test, val
 
             # 部屋レベルの情報を抽出
@@ -56,18 +57,24 @@ def create_dataset_csvs(dataset_root: Path):
             # ファイルレベルの情報をループ処理
             for file_info in room_meta.get("files", []):
                 record = room_info.copy()
+                
+                # clean_source_file と noise_source_file を絶対パスに変換
+                # Pathオブジェクトに変換してからresolve()を呼び、存在しない場合は元の値を保持
+                clean_source = file_info.get("clean_source_file")
+                noise_source = file_info.get("noise_source_file")
+
                 record.update({
                     "snr_db": file_info.get("snr_db"),
-                    "clean_source_file": file_info.get("clean_source_file"),
-                    "noise_source_file": file_info.get("noise_source_file"),
+                    "clean_source_file": str(Path(clean_source).resolve()) if clean_source and Path(clean_source).exists() else clean_source,
+                    "noise_source_file": str(Path(noise_source).resolve()) if noise_source and Path(noise_source).exists() else noise_source,
                 })
 
-                # 各音声ファイルの相対パスを構築
+                # 各音声ファイルの絶対パスを構築
                 base_name = file_info["filename_base"]
-                record["mixture_path"] = str((room_output_dir / "mixture" / f"{base_name}_mix.wav").relative_to(dataset_root))
-                record["clean_speech_path"] = str((room_output_dir / "clean_speech" / f"{base_name}_clean.wav").relative_to(dataset_root))
-                record["reverb_speech_path"] = str((room_output_dir / "reverb_speech" / f"{base_name}_reverb.wav").relative_to(dataset_root))
-                record["noise_only_path"] = str((room_output_dir / "noise_only" / f"{base_name}_noise.wav").relative_to(dataset_root))
+                record["noise_reverb"] = str(room_output_dir / "noise_reverb" / f"{base_name}_mix.wav")
+                record["clean"] = str(room_output_dir / "clean" / f"{base_name}_clean.wav")
+                record["reverb_only"] = str(room_output_dir / "reverb_speech" / f"{base_name}_reverb.wav")
+                record["noise_only"] = str(room_output_dir / "noise_only" / f"{base_name}_noise.wav")
 
                 all_records.append(record)
 
@@ -84,7 +91,7 @@ def create_dataset_csvs(dataset_root: Path):
     # 列の順序を整える
     ordered_columns = [
         "split", "room_id",
-        "mixture_path", "clean_speech_path", "reverb_speech_path", "noise_only_path",
+        "clean", "noise_only", "reverb_only", "noise_reverb",
         "snr_db", "measured_rt60", "c50", "d50",
         "x", "y", "z",
         "ch", "mic_shape",

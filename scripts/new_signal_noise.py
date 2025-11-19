@@ -331,24 +331,24 @@ def generate_room_data(config, room_id, room_output_dir, room_speech_files,
 					return data[:, 0]
 				return data  # (N, C)
 
-			if output_flags.get('save_mixture', False):  # .get()でキーが存在しなくても安全に
+			if output_flags.get('save_noise_reverb', False):  # .get()でキーが存在しなくても安全に
 				rec_util.save_wav(
-					room_output_dir / "mixture" / f"{base_filename}_mix.wav",
-					shape_output(signal_dict['mixture'])
+					room_output_dir / "noise_reverb" / f"{base_filename}_mix.wav",
+					shape_output(signal_dict['noise_reverb'])
 				)
-			if output_flags.get('save_reverberant_speech', False):
+			if output_flags.get('save_reverb_only', False):
 				rec_util.save_wav(
-					room_output_dir / "reverb_speech" / f"{base_filename}_reverb.wav",
-					shape_output(signal_dict['reverberant_speech'])
+					room_output_dir / "reverb_only" / f"{base_filename}_reverb.wav",
+					shape_output(signal_dict['reverb_only'])
 				)
 			if output_flags.get('save_noise_only', False):  # (YAMLのキーを 'save_noise_only' に変更)
 				rec_util.save_wav(
 					room_output_dir / "noise_only" / f"{base_filename}_noise.wav",
 					shape_output(signal_dict['noise_only'])  # (signal_dict['reverberant_noise'] から変更)
 				)
-			if output_flags.get('save_clean_speech', False):
+			if output_flags.get('save_clean', False):
 				rec_util.save_wav(
-					room_output_dir / "clean_speech" / f"{base_filename}_clean.wav",
+					room_output_dir / "clean" / f"{base_filename}_clean.wav",
 					shape_output(signal_dict['clean_speech'])
 				)
 

@@ -77,7 +77,7 @@ mixing_params:
 # 6. 💾 保存設定 (B案拡張)
 output_files:
   # どの音声ファイルをWAVとして保存するかこれにより、B案でもA案 のように複数のデータセットを同時に（しかしRIRファイル無しで）生成できる
-  save_mixture: true              # 雑音と残響の両方を付加した音声
-  save_reverberant_speech: true   # 残響のみを付加した音声
-  save_clean_speech: true         # 教師データ
-  save_noise_only: true           # 雑音のみを付加した音声
+  save_noise_reverb: true     # 雑音と残響の両方を付加した音声
+  save_reverb_only: true      # 残響のみを付加した音声
+  save_noise_only: true       # 雑音のみを付加した音声
+  save_clean: true            # 教師データ
