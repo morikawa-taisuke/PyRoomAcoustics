@@ -73,7 +73,7 @@ def create_dataset_csvs(dataset_root: Path):
                 base_name = file_info["filename_base"]
                 record["noise_reverb"] = str(room_output_dir / "noise_reverb" / f"{base_name}_mix.wav")
                 record["clean"] = str(room_output_dir / "clean" / f"{base_name}_clean.wav")
-                record["reverb_only"] = str(room_output_dir / "reverb_speech" / f"{base_name}_reverb.wav")
+                record["reverb_only"] = str(room_output_dir / "reverb_only" / f"{base_name}_reverb.wav")
                 record["noise_only"] = str(room_output_dir / "noise_only" / f"{base_name}_noise.wav")
 
                 all_records.append(record)
