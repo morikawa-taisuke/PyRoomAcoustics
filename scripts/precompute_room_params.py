@@ -1,4 +1,5 @@
 import pyroomacoustics as pa
+import os
 import numpy as np
 import json
 import yaml
@@ -49,7 +50,7 @@ def find_parameters_for_rt60(
 		room_dim: list,
 		fs: int,
 		tolerance: float = 0.01,  # 許容誤差 (±10ms)
-		max_trials: int = 50,  # 最大試行回数
+		max_trials: int = 100,  # 最大試行回数
 		step: float = 0.005  # 探索ステップ
 ):
 	"""
@@ -125,6 +126,7 @@ def precompute_parameters(config_path):
 	room_ys = generate_range(param_ranges['room_dimensions']['y_m'])
 	room_zs = generate_range(param_ranges['room_dimensions']['z_m'])
 	rt60s_target = generate_range(param_ranges['rt60_sec']['value'])
+	print(rt60s_target)
 
 	print(f"計算対象の部屋の組み合わせ総数: {len(room_xs) * len(room_ys) * len(room_zs)}")
 	print(f"計算対象のRT60の総数: {len(rt60s_target)}")
@@ -133,11 +135,13 @@ def precompute_parameters(config_path):
 	output_dir.mkdir(parents=True, exist_ok=True)
 
 	room_combinations = list(itertools.product(room_xs, room_ys, room_zs))
+	print(room_combinations)
 
 	start_time = time.time()
 
 	# --- 部屋のループ ---
 	for (x, y, z) in tqdm(room_combinations, desc="Room Dimensions"):
+		print(x,y,z)
 		room_dim = [float(x), float(y), float(z)]
 		output_data = {}
 
@@ -157,7 +161,6 @@ def precompute_parameters(config_path):
 				fs=fs
 			)
 
-			# (ご要望2)
 			# resultが None (計算不可 or 収束失敗) でない場合のみ、
 			# JSONにデータを書き込む
 			if result is not None:
@@ -169,14 +172,15 @@ def precompute_parameters(config_path):
 					"absorption": e_absorption,
 					"max_order": max_order
 				}
-		# (result が None の場合は何もせず、tqdm.writeも出さない)
+			else:
+				print("計算ができませんでした．")
 		# ===================================================================
 
 		# 6. 部屋ごと（Xm_Ym_Zm.json）にJSONファイルとして保存
 		# (ただし、中身が空でない場合のみ)
 		if output_data:  # 1つでも有効なRT60があれば保存
 			filename = f"{int(x)}m_{int(y)}m_{int(z)}m.json"
-			filepath = output_dir / filename
+			filepath = os.path.join(output_dir, filename)
 
 			with open(filepath, 'w', encoding='utf-8') as f:
 				json.dump(output_data, f, indent=4, cls=DecimalEncoder)
