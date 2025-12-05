@@ -165,40 +165,43 @@ def get_mic_array(mic_config, room_center):
 			# 3Dに拡張
 			mic_coords_3d = np.vstack([mic_coords, np.full(channels, center_pos[2])])
 			return mic_coords_3d  # (3, M) の形状
-	
+
 		else:
 			raise ValueError(f"未対応のアレイ形状: {array_type}")
 
 
 def get_source_positions(source_config, mic_center):
 	"""
-    YAML設定から音源の座標リストを生成する
+    YAML設定から音源の座標リストを生成する。
+    config/sample/sample.yml の 'source' セクションの構造に対応し、
+    マイク中心からの相対座標で音源位置を決定する。
     """
-	strategy = source_config['position_strategy']
-	count = get_random_value(source_config.get('count_range', [1, 1]))
-
 	positions = []
+	
+	# 音源の数を決定 (デフォルトは1)
+	# config/sample/sample.yml には 'count_range' がないため、デフォルト1とする
+	count = get_random_value(source_config.get('count_range', [1, 1])) 
+
 	for _ in range(int(count)):
-		if strategy == 'fixed_spherical':
-			params = source_config['params']
-			pos_relative = spherical_to_cartesian(
-				params['azimuth'], params['elevation'], params['distance']
-			)
+		pos_relative = None
 
-		elif strategy == 'random_spherical_range':
-			params = source_config['params']
-			azimuth = get_random_value(params['azimuth_range'])
-			elevation = get_random_value(params['elevation_range'])
-			distance = get_random_value(params['distance_range'])
+		# 1. ランダムな球面座標範囲が指定されているかチェック (例: horizon_range: [0, 360])
+		if all(k + '_range' in source_config for k in ['horizon', 'elevate', 'distance']):
+			azimuth = get_random_value(source_config['horizon_range'])
+			elevation = get_random_value(source_config['elevate_range'])
+			distance = get_random_value(source_config['distance_range'])
 			pos_relative = spherical_to_cartesian(azimuth, elevation, distance)
-
-		elif strategy == 'random_area':
-			# (旧: new_signal_noise.py のロジック)
-			# TODO: room_dim を引数で受け取る必要がある
-			raise NotImplementedError("random_area は room_dim が必要なため未実装")
-
-		else:
-			raise ValueError(f"未対応の音源配置: {strategy}")
+		
+		# 2. 固定の球面座標が指定されているかチェック (例: horizon: 90)
+		elif all(k in source_config for k in ['horizon', 'elevate', 'distance']):
+			azimuth = source_config['horizon']
+			elevation = source_config['elevate']
+			distance = source_config['distance']
+			pos_relative = spherical_to_cartesian(azimuth, elevation, distance)
+		
+		# 3. 未対応の音源配置設定
+		if pos_relative is None:
+			raise ValueError(f"未対応の音源配置設定です。'horizon', 'elevate', 'distance' またはその範囲指定が必要です: {source_config}")
 
 		# マイク中心からの相対座標 -> 部屋の絶対座標
 		positions.append(mic_center + pos_relative)
@@ -251,9 +254,8 @@ def compute_rirs(room: pa.ShoeBox, mic_coords: np.ndarray,
 				max_len = len(rir)
 
 		# (長さが異なる場合があるため、最長のRIRに合わせてパディング)
-		padded_rirs = []
+		padded = np.zeros(max_len, dtype=rir.dtype)
 		for rir in rirs_for_this_source:
-			padded = np.zeros(max_len, dtype=rir.dtype)
 			padded[:len(rir)] = rir
 			padded_rirs.append(padded)
 
