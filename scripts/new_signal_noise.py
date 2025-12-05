@@ -139,7 +139,6 @@ def process_split(config, split, split_speech_files, all_noise_files,
                   precomputed_json_files, output_root):
 	"""
 	単一のスプリット（例: "train"）のデータセット生成を実行する
-	(この関数の中身は、前回のコード案 [ステップ2.2] とほぼ同じ)
 	"""
 	settings = config['domain_generation_settings']
 
@@ -152,7 +151,6 @@ def process_split(config, split, split_speech_files, all_noise_files,
 	num_files_setting = settings['num_files_per_room']
 	total_files = len(split_speech_files)
 
-	# --- (ご要望: 'auto' モードの実装) ---
 	if num_files_setting == 'auto':
 		# (教師データ数 // 部屋数) で自動計算
 		# データ拡張なし（RIRの再利用なし）

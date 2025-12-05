@@ -1,5 +1,4 @@
 import pyroomacoustics as pa
-import os
 import numpy as np
 import json
 import yaml
@@ -9,6 +8,7 @@ from tqdm import tqdm
 import itertools
 import decimal
 import time  # (進捗確認用)
+from src.mymodule import const
 
 
 # Pythonのfloat -> JSONのシリアライズで発生する微小な誤差を防ぐ
@@ -117,7 +117,7 @@ def precompute_parameters(config_path):
 	"""
 	# 1. 設定の読み込み
 	config = load_yaml_config(config_path)
-	output_dir = Path(config['output_dir'])
+	output_dir = const.PARMS_DATA_DIR / config['output_dir']
 	fs = config['simulation_constants']['fs']
 
 	# 2. パラメータ範囲の生成
@@ -179,8 +179,8 @@ def precompute_parameters(config_path):
 		# 6. 部屋ごと（Xm_Ym_Zm.json）にJSONファイルとして保存
 		# (ただし、中身が空でない場合のみ)
 		if output_data:  # 1つでも有効なRT60があれば保存
-			filename = f"{int(x)}m_{int(y)}m_{int(z)}m.json"
-			filepath = os.path.join(output_dir, filename)
+			filename = f"{int(x*100)}cm_{int(y*100)}cm_{int(z*100)}cm.json"
+			filepath = output_dir / filename
 
 			with open(filepath, 'w', encoding='utf-8') as f:
 				json.dump(output_data, f, indent=4, cls=DecimalEncoder)
