@@ -126,8 +126,8 @@ def get_mic_array(mic_config, room_center):
 	"""
     YAML設定からマイクアレイの座標を生成する
     """
-	shape = mic_config['array']['shape']
-	channels = mic_config['array']['channels']
+	array_type = mic_config['array_type']
+	channels = mic_config['channel']
 
 	# 1. アレイ中心位置の決定
 	if mic_config['position_strategy'] == 'fixed_cartesian':
@@ -139,40 +139,35 @@ def get_mic_array(mic_config, room_center):
 		raise NotImplementedError(f"未実装のマイク配置: {mic_config['position_strategy']}")
 
 	# 2. アレイ形状の生成
-	if shape == 'single':
-		if channels != 1:
-			print(f"警告: shape='single' のため、channels=1 に強制します。")
+	if channels == 1:
 		return center_pos.reshape(3, 1)  # (3, 1) の形状
-
-	elif shape == 'linear':
-		spacing = mic_config['array']['spacing']
-		# (旧: rec_utility.py の set_mic_coordinate)
-		mic_coords = pa.linear_2D_array(
-			center=[center_pos[0], center_pos[1]],
-			M=channels,
-			phi=0,  # X軸に平行
-			d=spacing
-		)
-		# 3Dに拡張
-		mic_coords_3d = np.vstack([mic_coords, np.full(channels, center_pos[2])])
-		return mic_coords_3d  # (3, M) の形状
-
-	elif shape == 'circular':
-		diameter = mic_config['array']['diameter']
-		radius = diameter / 2.0
-		# (旧: rec_utility.py の set_circular_mic_coordinate)
-		mic_coords = pa.circular_2D_array(
-			center=[center_pos[0], center_pos[1]],
-			M=channels,
-			phi0=0,
-			radius=radius
-		)
-		# 3Dに拡張
-		mic_coords_3d = np.vstack([mic_coords, np.full(channels, center_pos[2])])
-		return mic_coords_3d  # (3, M) の形状
-
 	else:
-		raise ValueError(f"未対応のアレイ形状: {shape}")
+		if array_type == 'linear':	# 線形アレイ
+			distance = mic_config['distance'] * 0.01
+			mic_coords = pa.linear_2D_array(
+				center=[center_pos[0], center_pos[1]],
+				M=channels,
+				phi=0,  # X軸に平行
+				d=distance
+			)
+			# 3Dに拡張
+			mic_coords_3d = np.vstack([mic_coords, np.full(channels, center_pos[2])])
+			return mic_coords_3d  # (3, M) の形状
+		elif array_type == 'circular':	# 円形アレイ
+			diameter = mic_config['diameter'] * 0.01
+			radius = diameter / 2.0
+			mic_coords = pa.circular_2D_array(
+				center=[center_pos[0], center_pos[1]],
+				M=channels,
+				phi0=0,
+				radius=radius
+			)
+			# 3Dに拡張
+			mic_coords_3d = np.vstack([mic_coords, np.full(channels, center_pos[2])])
+			return mic_coords_3d  # (3, M) の形状
+	
+		else:
+			raise ValueError(f"未対応のアレイ形状: {array_type}")
 
 
 def get_source_positions(source_config, mic_center):
