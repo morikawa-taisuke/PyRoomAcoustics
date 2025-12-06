@@ -1,11 +1,12 @@
 # src/mymodule/rec_utility.py
 
+import random
+from pathlib import Path
+
 import numpy as np
 import pyroomacoustics as pa
 import soundfile as sf
 import yaml
-import random
-from pathlib import Path
 
 # --- (旧: rec_config.py の内容) ---
 # simulation.py または constants.py に移動することを推奨
@@ -142,7 +143,7 @@ def get_mic_array(mic_config, room_center):
 	if channels == 1:
 		return center_pos.reshape(3, 1)  # (3, 1) の形状
 	else:
-		if array_type == 'linear':	# 線形アレイ
+		if array_type == 'linear':  # 線形アレイ
 			distance = mic_config['distance'] * 0.01
 			mic_coords = pa.linear_2D_array(
 				center=[center_pos[0], center_pos[1]],
@@ -153,7 +154,7 @@ def get_mic_array(mic_config, room_center):
 			# 3Dに拡張
 			mic_coords_3d = np.vstack([mic_coords, np.full(channels, center_pos[2])])
 			return mic_coords_3d  # (3, M) の形状
-		elif array_type == 'circular':	# 円形アレイ
+		elif array_type == 'circular':  # 円形アレイ
 			diameter = mic_config['diameter'] * 0.01
 			radius = diameter / 2.0
 			mic_coords = pa.circular_2D_array(
@@ -177,10 +178,10 @@ def get_source_positions(source_config, mic_center):
     マイク中心からの相対座標で音源位置を決定する。
     """
 	positions = []
-	
+
 	# 音源の数を決定 (デフォルトは1)
 	# config/sample/sample.yml には 'count_range' がないため、デフォルト1とする
-	count = get_random_value(source_config.get('count_range', [1, 1])) 
+	count = get_random_value(source_config.get('count_range', [1, 1]))
 
 	for _ in range(int(count)):
 		pos_relative = None
@@ -191,17 +192,18 @@ def get_source_positions(source_config, mic_center):
 			elevation = get_random_value(source_config['elevate_range'])
 			distance = get_random_value(source_config['distance_range'])
 			pos_relative = spherical_to_cartesian(azimuth, elevation, distance)
-		
+
 		# 2. 固定の球面座標が指定されているかチェック (例: horizon: 90)
 		elif all(k in source_config for k in ['horizon', 'elevate', 'distance']):
 			azimuth = source_config['horizon']
 			elevation = source_config['elevate']
 			distance = source_config['distance']
 			pos_relative = spherical_to_cartesian(azimuth, elevation, distance)
-		
+
 		# 3. 未対応の音源配置設定
 		if pos_relative is None:
-			raise ValueError(f"未対応の音源配置設定です。'horizon', 'elevate', 'distance' またはその範囲指定が必要です: {source_config}")
+			raise ValueError(
+				f"未対応の音源配置設定です。'horizon', 'elevate', 'distance' またはその範囲指定が必要です: {source_config}")
 
 		# マイク中心からの相対座標 -> 部屋の絶対座標
 		positions.append(mic_center + pos_relative)
@@ -227,18 +229,12 @@ def compute_rirs(room: pa.ShoeBox, mic_coords: np.ndarray,
 
 	room.compute_rir()
 
-	# ▼▼▼ 修正箇所 ▼▼▼
 	# room.rir は [Mic][Source] の入れ子リスト
 	all_rirs_list_by_mic = room.rir
 
 	num_mics = len(all_rirs_list_by_mic)
 	num_speech = len(speech_pos_list)
 	num_noise = len(noise_pos_list)
-
-	# -----------------------------------------------------
-	# ご提案のあった「リストの転置 (リシェイプ)」を実行
-	# [Mic][Source] -> [Source][Mic] のリストに変換
-	# -----------------------------------------------------
 
 	# 話者RIRの転置
 	rir_speech_list = []
@@ -254,13 +250,13 @@ def compute_rirs(room: pa.ShoeBox, mic_coords: np.ndarray,
 				max_len = len(rir)
 
 		# (長さが異なる場合があるため、最長のRIRに合わせてパディング)
-		padded = np.zeros(max_len, dtype=rir.dtype)
 		for rir in rirs_for_this_source:
+			padded = np.zeros(max_len, dtype=rir.dtype)
 			padded[:len(rir)] = rir
-			padded_rirs.append(padded)
+			rir_speech_list.append(padded)
 
 		# 全マイク (C) のRIRをスタック -> (C, N) のNumpy配列
-		rir_speech_list.append(np.array(padded_rirs))
+		# rir_speech_list.append(np.array(padded_rirs))
 
 	# ノイズRIRの転置
 	rir_noise_list = []
@@ -276,23 +272,22 @@ def compute_rirs(room: pa.ShoeBox, mic_coords: np.ndarray,
 			if len(rir) > max_len:
 				max_len = len(rir)
 
-		padded_rirs = []
 		for rir in rirs_for_this_source:
 			padded = np.zeros(max_len, dtype=rir.dtype)
 			padded[:len(rir)] = rir
-			padded_rirs.append(padded)
+			rir_noise_list.append(padded)
 
-		rir_noise_list.append(np.array(padded_rirs))
+		# rir_noise_list.append(np.array(padded_rirs))
 
 	rir_dict = {
 		# 'rir_speech' は [ array(C, N_s0), array(C, N_s1), ... ] のリスト
-		'rir_speech': rir_speech_list,
+		'rir_speech': np.array(rir_speech_list),
 		# 'rir_noise' は [ array(C, N_n0), array(C, N_n1), ... ] のリスト
-		'rir_noise': rir_noise_list
+		'rir_noise': np.array(rir_noise_list)
 	}
-	# ▲▲▲ 修正箇所 ▲▲▲
 
 	return rir_dict
+
 
 def get_wave_power(wave_data):
 	"""音源のパワーを計算する (旧: rec_utility.py)"""
@@ -358,12 +353,20 @@ def convolve_and_mix(
 	# (C, N_rir) -> (N_rir, C)
 	rir_speech_col = rir_speech.T
 	rir_noise_col = rir_noise.T
+	num_channels = rir_speech_col.shape[1]
+
+	# ★★★ バグ修正: 畳み込み前に入力信号をチャンネル数だけ複製する ★★★
+	clean_signal_multi = np.tile(clean_signal_col, (1, num_channels))
+	noise_segment_multi = np.tile(noise_segment_col, (1, num_channels))
+
+	# print(rir_speech_col.shape, clean_signal_multi.shape)
+	# print(rir_noise_col.shape, noise_segment_multi.shape)
 
 	# 畳み込み (fftconvolveが望ましいが、簡易的に np.convolve を使う)
 	# (N_out, C) の形状になる
 	from scipy.signal import fftconvolve
-	reverb_signal = fftconvolve(clean_signal_col, rir_speech_col, mode='full', axes=0)[:target_len]
-	reverb_noise = fftconvolve(noise_segment_col, rir_noise_col, mode='full', axes=0)[:target_len]
+	reverb_signal = fftconvolve(clean_signal_multi, rir_speech_col, mode='full', axes=0)[:target_len]
+	reverb_noise = fftconvolve(noise_segment_multi, rir_noise_col, mode='full', axes=0)[:target_len]
 
 	# 4. SNR調整
 

@@ -204,11 +204,15 @@ def generate_single_file(config, file_id, output_dir, speech_filepath, all_noise
 		config['source']['noise'], mic_coords[:, 0]
 	)
 
+	# rir_dictには、音源ごと、かつマルチチャンネルのRIRが格納されます。
+	# rir_dict['rir_speech']はリストで、各要素が1つの音源に対応するRIR（形状: [チャンネル数, RIR長]）です。
+	# ここでは、最初の話者音源と最初のノイズ音源を使用します。
 	rir_dict = compute_rirs(room, mic_coords, speech_pos_list, noise_pos_list)
-	rir_speech = rir_dict['rir_speech'][0]
-	rir_noise = rir_dict['rir_noise'][0]
+	rir_speech = rir_dict['rir_speech']
+	rir_noise = rir_dict['rir_noise']
 
 	try:
+		# clean_signalはモノラル音声（形状: [音声長,]）として読み込まれます。
 		clean_signal, _ = load_wav(speech_filepath, sr=SAMPLING_RATE)
 		noise_filepath = Path(random.choice(all_noise_files))
 		noise_signal, _ = load_wav(noise_filepath, sr=SAMPLING_RATE)
@@ -219,6 +223,8 @@ def generate_single_file(config, file_id, output_dir, speech_filepath, all_noise
 		tqdm.write(f"❌ ファイル読み込みエラー: {e}", file=sys.stderr)
 		return
 
+	# convolve_and_mixはマルチチャンネルRIRを使い、各チャンネルの音声を生成します。
+	# 返されるdict内の各音声データは、[音声長, チャンネル数] という標準的な形状になっています。
 	signal_dict = convolve_and_mix(
 		clean_signal,
 		noise_signal,
@@ -228,6 +234,9 @@ def generate_single_file(config, file_id, output_dir, speech_filepath, all_noise
 	)
 
 	base_filename = f"{speech_filepath.stem}_{int(actual_rt60*1000):}msec_snr{int(snr_db)}dB"
+	
+	# save_wavは[音声長, チャンネル数]の形状のデータを正しくマルチチャンネルWAVとして保存します。
+	# この形式はsoundfileやlibrosaなどのライブラリで標準的に扱われます。
 	rec_util.save_wav(
 		output_dir / "noise_reverb" / f"{base_filename}_mix.wav",
 		signal_dict['noise_reverb']
@@ -253,7 +262,7 @@ if __name__ == "__main__":
 	parser.add_argument(
 		'--config',
 		type=str,
-		default="C:/Users/kataoka-lab/Desktop/PyRoomAcoustics/config/sample/sample.yml",
+		default="/Users/a/Document/python/PyRoomAcoustics/config/sample/sample.yml",
 		help="データセット生成の仕様を定義したYAMLファイルのパス"
 	)
 	args = parser.parse_args()
