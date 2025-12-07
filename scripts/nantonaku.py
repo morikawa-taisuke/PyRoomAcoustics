@@ -264,11 +264,11 @@ def generate_single_file(config, file_id, output_dir, speech_filepath, all_noise
 		snr_db
 	)
 
-	base_filename = f"{speech_filepath.stem}_{int(actual_rt60 * 1000):}msec_snr{int(snr_db)}dB"
+	base_filename = f"{speech_filepath.stem}_{int(actual_rt60 * 1000):}msec_{int(snr_db)}dB"
 
 	# 音声ファイルを保存
 	rec_util.save_wav(
-		output_dir / "noise_reverb" / f"{base_filename}_mix.wav",
+		output_dir / "noise_reverb" / f"{base_filename}_{noise_filepath.stem}_mix.wav",
 		signal_dict['noise_reverb']
 	)
 	rec_util.save_wav(
@@ -276,7 +276,7 @@ def generate_single_file(config, file_id, output_dir, speech_filepath, all_noise
 		signal_dict['reverb_only']
 	)
 	rec_util.save_wav(
-		output_dir / "noise_only" / f"{base_filename}_noise.wav",
+		output_dir / "noise_only" / f"{base_filename}_{noise_filepath.stem}_noise.wav",
 		signal_dict['noise_only']
 	)
 	rec_util.save_wav(
