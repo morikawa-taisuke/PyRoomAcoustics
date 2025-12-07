@@ -48,6 +48,8 @@ class NumpyDecimalEncoder(json.JSONEncoder):
 			return o.tolist()
 		if isinstance(o, decimal.Decimal):
 			return str(o)
+		if isinstance(o, Path):
+			return str(o)
 		return super(NumpyDecimalEncoder, self).default(o)
 
 
@@ -188,7 +190,7 @@ def generate_dataset(config_path):
 		}
 
 		metadata_path = output_root / "metadata.json"
-		metadata_path.mkdir(parents=True, exist_ok=True)
+		# metadata_path.mkdir(parents=True, exist_ok=True)
 		with open(metadata_path, 'w', encoding='utf-8') as f:
 			json.dump(metadata, f, cls=NumpyDecimalEncoder, indent=4, ensure_ascii=False)
 
