@@ -56,7 +56,7 @@ def load_and_filter_params(precomputed_path: Path, rt60_range: list):
 	事前計算されたJSONファイル(単一またはディレクトリ)を読み込み、指定RT60範囲のパラメータを抽出する
 	"""
 	all_params = []
-	
+
 	# パスがディレクトリかファイルかを判定
 	if precomputed_path.is_dir():
 		json_files = get_file_list(precomputed_path, '.json')
@@ -77,7 +77,7 @@ def load_and_filter_params(precomputed_path: Path, rt60_range: list):
 			room_params_data = json.load(f)
 
 		dims_str = json_path.stem.replace('cm', '').split('_')
-		room_dim = [float(dims_str[0])*0.01, float(dims_str[1])*0.01, float(dims_str[2])*0.01]
+		room_dim = [float(dims_str[0]) * 0.01, float(dims_str[1]) * 0.01, float(dims_str[2]) * 0.01]
 
 		for rt60_key, params in room_params_data.items():
 			rt60_val = float(rt60_key.replace('s', ''))
@@ -149,57 +149,46 @@ def generate_dataset(config_path):
 			print(f"警告: {split_speech_dir} が見つかりません。スキップします。")
 			continue
 
-		process_split(
-			config=config,
-			split=split,
-			split_speech_files=split_speech_files,
-			all_noise_files=all_noise_files,
-			all_valid_room_params=all_valid_room_params,
-			output_root=output_root
-		)
+		config = process_split(config=config,
+							   split=split,
+							   split_speech_files=split_speech_files,
+							   all_noise_files=all_noise_files,
+							   all_valid_room_params=all_valid_room_params,
+							   output_root=output_root
+							   )
 
 		# メタデータを生成して保存
 		metadata = {
 			"path": {
-				"sound_dir_name": config['path']['sound_dir_name'],
-				"noise_dir_name": config['path']['noise_dir_name'],
-				"original_speech_path": str(speech_filepath),
-				"original_noise_path": str(noise_filepath),
+				"original_speech_path": const.SPEECH_DATA_DIR / paths['sound_dir_name'],
+				"original_noise_path": const.NOISE_DATA_DIR / paths['noise_dir_name'],
 			},
 			"room": {
-				"precomputed_path": selected_room_param['json_path'],
-				"snr_db": snr_db,
-				"rt60_actual": actual_rt60,
-				"room_dim": room_dim,
-				"absorption": absorption,
-				"max_order": max_order,
+				"precomputed_path": config['room']['precomputed_path'],
+				"snr_db": config['room']['snr'],
+				"rt60_actual": config['room']['rt60'],
 			},
 			"mic": {
 				"config": config['mic'],
-				"positions_xyz": mic_coords,
 			},
 			"source": {
 				"speech": {
 					"config": config['source']['speech'],
-					"positions_xyz": speech_pos_list,
 				},
 				"noise": {
 					"config": config['source']['noise'],
-					"positions_xyz": noise_pos_list,
 				}
 			},
-			"output_files": {
-				"noise_reverb": f"noise_reverb/{base_filename}_mix.wav",
-				"reverb_only": f"reverb_only/{base_filename}_reverb.wav",
-				"noise_only": f"noise_only/{base_filename}_noise.wav",
-				"clean": f"clean/{base_filename}_clean.wav",
-				"metadata": f"metadata/{base_filename}.json"
+			"position": {
+				"room_dim": config['position']['room_dim'],
+				"mic": config['position']['mic'],
+				"speech": config['position']['speech'],
+				"noise": config['position']['noise'],
 			}
 		}
 
-		metadata_dir = output_dir / "metadata"
-		metadata_dir.mkdir(parents=True, exist_ok=True)
-		metadata_path = metadata_dir / f"{base_filename}.json"
+		metadata_path = output_root / "metadata.json"
+		metadata_path.mkdir(parents=True, exist_ok=True)
 		with open(metadata_path, 'w', encoding='utf-8') as f:
 			json.dump(metadata, f, cls=NumpyDecimalEncoder, indent=4, ensure_ascii=False)
 
@@ -212,14 +201,14 @@ def process_split(config, split, split_speech_files, all_noise_files, all_valid_
 		selected_room_param = random.choice(all_valid_room_params)
 		output_dir = output_root / split
 
-		generate_single_file(
-			config=config,
-			file_id=i,
-			output_dir=output_dir,
-			speech_filepath=speech_filepath,
-			all_noise_files=all_noise_files,
-			selected_room_param=selected_room_param
-		)
+		config = generate_single_file(config=config,
+									  file_id=i,
+									  output_dir=output_dir,
+									  speech_filepath=speech_filepath,
+									  all_noise_files=all_noise_files,
+									  selected_room_param=selected_room_param
+									  )
+	return config
 
 
 def generate_single_file(config, file_id, output_dir, speech_filepath, all_noise_files, selected_room_param):
@@ -248,6 +237,10 @@ def generate_single_file(config, file_id, output_dir, speech_filepath, all_noise
 	noise_pos_list = get_source_positions(
 		config['source']['noise'], mic_coords[:, 0]
 	)
+	config['position']['room_dim'] = room_dim
+	config['position']['mic'] = mic_coords.T
+	config['position']['speech'] = speech_pos_list
+	config['position']['noise'] = noise_pos_list
 
 	rir_dict = compute_rirs(room, mic_coords, speech_pos_list, noise_pos_list)
 	rir_speech = rir_dict['rir_speech']
@@ -272,7 +265,7 @@ def generate_single_file(config, file_id, output_dir, speech_filepath, all_noise
 		snr_db
 	)
 
-	base_filename = f"{speech_filepath.stem}_{int(actual_rt60*1000):}msec_snr{int(snr_db)}dB"
+	base_filename = f"{speech_filepath.stem}_{int(actual_rt60 * 1000):}msec_snr{int(snr_db)}dB"
 
 	# 音声ファイルを保存
 	rec_util.save_wav(
@@ -291,6 +284,7 @@ def generate_single_file(config, file_id, output_dir, speech_filepath, all_noise
 		output_dir / "clean" / f"{base_filename}_clean.wav",
 		signal_dict['clean_speech']
 	)
+	return config
 
 
 if __name__ == "__main__":

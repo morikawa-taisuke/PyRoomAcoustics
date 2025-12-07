@@ -220,13 +220,13 @@ def compute_rirs(room: pa.ShoeBox, mic_coords: np.ndarray,
 	(修正版: room.rir が [Mic][Source] の入れ子リストであると確定)
 	"""
 
-	# (マイクと音源の追加ロジックは変更なし)
+	# 部屋にマイクと音源を追加
 	room.add_microphone_array(mic_coords)
 
 	all_sources = speech_pos_list + noise_pos_list
 	for pos in all_sources:
 		room.add_source(pos)
-
+	# RIRの計算
 	room.compute_rir()
 
 	# room.rir は [Mic][Source] の入れ子リスト
