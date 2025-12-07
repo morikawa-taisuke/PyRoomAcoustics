@@ -1,0 +1,61 @@
+#  音源
+path:
+    # 音声データのディレクトリ名
+    sound_dir_name: "DEMAND"
+    # 雑音のディレクトリ名 / ファイル名
+    noise_dir_name: "DEMAND"
+
+# 部屋の条件
+room:
+    # シミュレーションのパラメータを保存しているディレクトリ (precompute_paramsの出力ディレクトリ名)
+    # ディレクトリ内に部屋のパラメータ(JSON)が複数ある場合，ランダムで選択する
+    # 単一のjsonファイルのみ(指定する部屋が1つ)の音声を作成したい場合，はprecompute_parmsの出力ディレクトリ以降のファイルパスパスを指定
+    precomputed_path: "precomputed_params_2/350cm_400cm_260cm.json"
+    # SNR (最小値，最大値，ステップ)
+    snr: [ -5, 10, 1 ]
+    # 残響時間 (最小値，最大値)
+    rt60: [ 0.3, 1.0 ]
+    # 部屋の寸法
+    room_dim: [ x, y, z ]
+
+
+# マイクの条件
+mic:
+    # チャンネル数
+    channel: 1
+    # アレイマイクの中心点
+    position_strategy: 'center' # 部屋の中心
+    # channelが1のとき，以下の設定は無視される
+    # アレイの形状 (liner / circle)
+    array_type: "liner"
+    # マイクの間隔 (cm)
+    distance: 10
+    # マイクの直径 (cm)
+    diameter: 10
+    # 各マイクの座標 [[マイク1のx座標，マイク1のy座標，マイク1のz座標], ..., [マイクmのx座標，マイクmのy座標，マイクmのz座標]]
+    position: [ [ x1, y1, z1 ], ..., [ xm, ym, zm ] ]
+
+
+# 音源の条件
+source:
+    # 音声
+    speech:
+        # 水平角 (度) 90度がマイクの正面
+        horizon: 90
+        # 仰角 (度) 0度がマイクの正面
+        elevate: 0
+        # 距離 (m) アレイマイクの中心点からの距離
+        distance: 0.3
+        # 話者の座標
+        position: [ x, y, z ]
+
+    # 雑音
+    noise:
+        # 水平角 (度) 0度がマイクの右側
+        horizon: 0
+        # 仰角 (度) 0度がマイクの正面
+        elevate: 0
+        # 距離 (m) アレイマイクの中心点からの距離
+        distance: 0.7
+        # 雑音の座標
+        position: [ x, y, z ]
