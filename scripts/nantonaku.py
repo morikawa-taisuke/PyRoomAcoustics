@@ -237,10 +237,9 @@ def generate_single_file(config, file_id, output_dir, speech_filepath, all_noise
 	noise_pos_list = get_source_positions(
 		config['source']['noise'], mic_coords[:, 0]
 	)
-	config['position']['room_dim'] = room_dim
-	config['position']['mic'] = mic_coords.T
-	config['position']['speech'] = speech_pos_list
-	config['position']['noise'] = noise_pos_list
+	# print(type(config))
+	position = {'room_dim': room_dim, 'mic': mic_coords.T, 'speech': speech_pos_list, 'noise': noise_pos_list}
+	config['position'] = position
 
 	rir_dict = compute_rirs(room, mic_coords, speech_pos_list, noise_pos_list)
 	rir_speech = rir_dict['rir_speech']
