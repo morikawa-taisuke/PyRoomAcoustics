@@ -133,5 +133,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # configパスをプロジェクトルートからの相対パスとして解決
-    config_full_path = const.ROOT / args.config
-    create_audio_paths_csv(config_full_path)
+    # config_full_path = const.ROOT / args.config
+    create_audio_paths_csv(args.config)
