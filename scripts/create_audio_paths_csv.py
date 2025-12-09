@@ -2,6 +2,7 @@ import csv
 from pathlib import Path
 import argparse
 import sys
+from tqdm import tqdm
 
 try:
     from mymodule import const
@@ -60,7 +61,7 @@ def create_audio_paths_csv(config_path):
             'noise_reverb': split_dir / 'noise_reverb'
         }
 
-        for clean_path in clean_files:
+        for clean_path in tqdm(clean_files):
             try:
                 # ファイル名から「話者番号_発話番号」を抽出 (例: p225_001)
                 parts = clean_path.stem.split('_')
