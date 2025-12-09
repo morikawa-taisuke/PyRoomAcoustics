@@ -88,6 +88,9 @@ def get_file_list(dir_path: Path, ext: str = '.wav'):
     指定したディレクトリ内の全ての .wav ファイルを再帰的に検索する
     (my_func.py の rglob 版)
     """
+
+	if dir_path.is_file():
+		return [dir_path]
 	if not dir_path.is_dir():
 		raise FileNotFoundError(f"ディレクトリが見つかりません: {dir_path}")
 	return sorted(list(dir_path.rglob(f"*{ext}")))
