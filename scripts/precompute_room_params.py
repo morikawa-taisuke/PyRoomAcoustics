@@ -45,8 +45,7 @@ def generate_range(range_config):
 # ===================================================================
 # === ▼▼▼ 修正箇所 1: RT60探索関数の追加 ▼▼▼ ===
 # ===================================================================
-def find_parameters_for_rt60(
-		target_rt60: float,
+def find_parameters_for_rt60(target_rt60: float,
 		room_dim: list,
 		fs: int,
 		tolerance: float = 0.01,  # 許容誤差 (±10ms)
@@ -63,18 +62,10 @@ def find_parameters_for_rt60(
 	for _ in range(max_trials):
 		try:
 			# 1. 理論値の計算
-			e_absorption, max_order = pa.inverse_sabine(
-				rt60=current_target_rt60,
-				room_dim=room_dim
-			)
+			e_absorption, max_order = pa.inverse_sabine(rt60=current_target_rt60, room_dim=room_dim)
 
 			# 2. シミュレーションで実測
-			room = pa.ShoeBox(
-				room_dim,
-				fs=fs,
-				max_order=max_order,
-				materials=pa.Material(e_absorption)
-			)
+			room = pa.ShoeBox(room_dim, fs=fs, max_order=max_order, materials=pa.Material(e_absorption))
 
 			# (計測のため、ダミーの音源とマイクを配置)
 			room.add_source([room_dim[0] / 2 - 0.1, room_dim[1] / 2, 1.5])
@@ -150,16 +141,8 @@ def precompute_parameters(config_path):
 		for rt60_decimal in tqdm(rt60s_target, desc=f"Room {x}x{y}x{z}", leave=False):
 			target_rt60_float = float(rt60_decimal)
 
-			# ===================================================================
-			# === ▼▼▼ 修正箇所 2: 探索関数の呼び出しとエラー処理 ▼▼▼ ===
-			# ===================================================================
-
 			# 探索関数を呼び出す
-			result = find_parameters_for_rt60(
-				target_rt60=target_rt60_float,
-				room_dim=room_dim,
-				fs=fs
-			)
+			result = find_parameters_for_rt60(target_rt60=target_rt60_float, room_dim=room_dim, fs=fs)
 
 			# resultが None (計算不可 or 収束失敗) でない場合のみ、
 			# JSONにデータを書き込む
@@ -174,7 +157,6 @@ def precompute_parameters(config_path):
 				}
 			else:
 				print("計算ができませんでした．")
-		# ===================================================================
 
 		# 6. 部屋ごと（Xm_Ym_Zm.json）にJSONファイルとして保存
 		# (ただし、中身が空でない場合のみ)
@@ -190,9 +172,7 @@ def precompute_parameters(config_path):
 
 
 if __name__ == "__main__":
-	parser = argparse.ArgumentParser(
-		description="部屋の音響パラメータを事前計算し、JSONファイルとして保存します。"
-	)
+	parser = argparse.ArgumentParser(description="部屋の音響パラメータを事前計算し、JSONファイルとして保存します。")
 	parser.add_argument(
 		'--config',
 		type=str,
