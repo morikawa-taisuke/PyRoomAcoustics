@@ -1,5 +1,5 @@
 # src/mymodule/rec_utility.py
-
+import json
 import random
 from pathlib import Path
 
@@ -49,6 +49,13 @@ def load_yaml_config(config_path):
 	"""YAML設定ファイルを読み込む"""
 	with open(config_path, 'r', encoding='utf-8') as f:
 		config = yaml.safe_load(f)
+	return config
+
+
+def load_json_config(config_path):
+	"""JSONファイルを読み込む"""
+	with open(config_path, 'r', encoding='utf-8') as f:
+		config = json.load(f)
 	return config
 
 
