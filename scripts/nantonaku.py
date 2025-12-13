@@ -1,13 +1,14 @@
 # scripts/new_signal_noise.py
+import argparse
+import decimal
 import json
 import random
+import sys
+from pathlib import Path
+
 import numpy as np
 import pyroomacoustics as pa
 from tqdm import tqdm
-from pathlib import Path
-import sys
-import argparse
-import decimal
 
 # 親ディレクトリをsys.pathに追加
 # sys.path.append(str(Path(__file__).resolve().parent.parent))
@@ -94,7 +95,7 @@ def load_and_filter_params(precomputed_path: Path, rt60_range: list):
 
 	if not all_params:
 		raise ValueError(f"指定されたRT60範囲 [{rt60_range[0]}, {rt60_range[1]}] に一致するパラメータが、"
-						 f"{precomputed_path} 内に見つかりませんでした。")
+		                 f"{precomputed_path} 内に見つかりませんでした。")
 
 	print(f"    - ✅ RT60範囲に一致するパラメータ候補を {len(all_params)} 件発見しました。")
 	return all_params
@@ -152,12 +153,12 @@ def generate_dataset(config_path):
 			continue
 
 		config = process_split(config=config,
-							   split=split,
-							   split_speech_files=split_speech_files,
-							   all_noise_files=all_noise_files,
-							   all_valid_room_params=all_valid_room_params,
-							   output_root=output_root
-							   )
+		                       split=split,
+		                       split_speech_files=split_speech_files,
+		                       all_noise_files=all_noise_files,
+		                       all_valid_room_params=all_valid_room_params,
+		                       output_root=output_root
+		                       )
 
 		# メタデータを生成して保存
 		metadata = {
@@ -204,12 +205,12 @@ def process_split(config, split, split_speech_files, all_noise_files, all_valid_
 		output_dir = output_root / split
 
 		config = generate_single_file(config=config,
-									  file_id=i,
-									  output_dir=output_dir,
-									  speech_filepath=speech_filepath,
-									  all_noise_files=all_noise_files,
-									  selected_room_param=selected_room_param
-									  )
+		                              file_id=i,
+		                              output_dir=output_dir,
+		                              speech_filepath=speech_filepath,
+		                              all_noise_files=all_noise_files,
+		                              selected_room_param=selected_room_param
+		                              )
 	return config
 
 
@@ -233,12 +234,8 @@ def generate_single_file(config, file_id, output_dir, speech_filepath, all_noise
 
 	room_center = np.array(room_dim) / 2.0
 	mic_coords = get_mic_array(config['mic'], room_center)
-	speech_pos_list = get_source_positions(
-		config['source']['speech'], mic_coords[:, 0]
-	)
-	noise_pos_list = get_source_positions(
-		config['source']['noise'], mic_coords[:, 0]
-	)
+	speech_pos_list = get_source_positions(config['source']['speech'], room_center)
+	noise_pos_list = get_source_positions(config['source']['noise'], room_center)
 	# print(type(config))
 	position = {'room_dim': room_dim, 'mic': mic_coords.T, 'speech': speech_pos_list, 'noise': noise_pos_list}
 	config['position'] = position
@@ -289,9 +286,7 @@ def generate_single_file(config, file_id, output_dir, speech_filepath, all_noise
 
 
 if __name__ == "__main__":
-	parser = argparse.ArgumentParser(
-		description="YAML設定に基づき、音響データセットを生成します。"
-	)
+	parser = argparse.ArgumentParser(description="YAML設定に基づき、音響データセットを生成します。")
 	parser.add_argument(
 		'--config',
 		type=str,
