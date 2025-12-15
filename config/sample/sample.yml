@@ -5,7 +5,7 @@ path:
   # 雑音のディレクトリ名 / ファイル名
   noise_dir_name: "DEMAND"
   # 出力先のディレクトリ名
-  output_dir_name: "VCTK_DEMAND_4ch_linear_10cm_1000cm_1000cm_1000cm"
+  output_dir_name: "VCTK_DEMAND_1ch_linear_10cm_1000cm_1000cm_1000cm2"
   # 処理する音声の種類
   wave_type_list: ["train", "val", "test"]
 
@@ -23,7 +23,7 @@ room:
 # マイクの条件
 mic:
   # チャンネル数
-  channel: 4
+  channel: 1
   # アレイマイクの中心点
   position_strategy: 'center' # 部屋の中心
   # channelが1のとき，以下の設定は無視される
