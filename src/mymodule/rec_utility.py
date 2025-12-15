@@ -1,5 +1,5 @@
 # src/mymodule/rec_utility.py
-
+import json
 import random
 from pathlib import Path
 
@@ -49,6 +49,13 @@ def load_yaml_config(config_path):
 	"""YAML設定ファイルを読み込む"""
 	with open(config_path, 'r', encoding='utf-8') as f:
 		config = yaml.safe_load(f)
+	return config
+
+
+def load_json_config(config_path):
+	"""JSONファイルを読み込む"""
+	with open(config_path, 'r', encoding='utf-8') as f:
+		config = json.load(f)
 	return config
 
 
@@ -312,13 +319,7 @@ def get_scale_noise(signal_data, noise_data, snr_db):
 	return noise_data * noise_scale
 
 
-def convolve_and_mix(
-		clean_signal: np.ndarray,
-		noise_signal: np.ndarray,
-		rir_speech: np.ndarray,
-		rir_noise: np.ndarray,
-		snr_db: float
-) -> dict:
+def convolve_and_mix(clean_signal: np.ndarray, noise_signal: np.ndarray, rir_speech: np.ndarray, rir_noise: np.ndarray, snr_db: float) -> dict:
 	"""
 	各信号とRIRを畳み込み、指定したSNRで混合する
 	(修正版: ユーザー定義に基づき "noise_only" (clean + dry_noise) を生成)
@@ -358,45 +359,45 @@ def convolve_and_mix(
 	rir_noise_col = rir_noise.T
 	num_channels = rir_speech_col.shape[1]
 
-	# ★★★ バグ修正: 畳み込み前に入力信号をチャンネル数だけ複製する ★★★
 	clean_signal_multi = np.tile(clean_signal_col, (1, num_channels))
 	noise_segment_multi = np.tile(noise_segment_col, (1, num_channels))
 
 	# print(rir_speech_col.shape, clean_signal_multi.shape)
 	# print(rir_noise_col.shape, noise_segment_multi.shape)
 
-	# 畳み込み (fftconvolveが望ましいが、簡易的に np.convolve を使う)
+	# 畳み込み
 	# (N_out, C) の形状になる
 	from scipy.signal import fftconvolve
 	reverb_signal = fftconvolve(clean_signal_multi, rir_speech_col, mode='full', axes=0)[:target_len]
 	reverb_noise = fftconvolve(noise_segment_multi, rir_noise_col, mode='full', axes=0)[:target_len]
 
 	# 4. SNR調整
+	scaled_reverb_noise = get_scale_noise(reverb_signal, reverb_noise, snr_db)  # noise_reverb用
+	scaled_dry_noise = get_scale_noise(clean_signal, noise_segment, snr_db) # noise_only用
 
-	# --- 4a. 混合音(noise_reverb)用: 残響音声 vs 残響ノイズ
-	scaled_reverb_noise = get_scale_noise(reverb_signal, reverb_noise, snr_db)
+	# 5. 混合 (残響あり + 残響ありノイズ)
+	mixed_signal = reverb_signal + scaled_reverb_noise  # noise_reverb
 
-	# --- 4b. 雑音のみ(noise_only)用: クリーン音声 vs ドライノイズ
-	# (get_scale_noise はN次元配列対応なので (N,) 同士でもOK)
-	scaled_dry_noise = get_scale_noise(clean_signal, noise_segment, snr_db)
-
-	# 5. 混合
-	# 混合音 (残響あり + 残響ありノイズ)
-	mixed_signal = reverb_signal + scaled_reverb_noise
-
-	# 雑音のみ付加 (クリーン + ドライノイズ)
 	# (N,) + (N,) = (N,)
-	noise_only_signal_mono = clean_signal + scaled_dry_noise
+	noise_only_signal_mono = clean_signal + scaled_dry_noise    # noise_only
 
 	# 6. 出力形式 (N, C) に整形
 	num_channels = reverb_signal.shape[1]
 
 	# (N,) -> (N, C)
-	clean_speech_target = np.tile(clean_signal_col, (1, num_channels))
+	clean_speech_target = np.tile(clean_signal_col, (1, num_channels))  # clean
 
 	# (N,) -> (N, 1) -> (N, C)
 	noise_only_signal_col = noise_only_signal_mono[:, np.newaxis]
 	noise_only_target = np.tile(noise_only_signal_col, (1, num_channels))
+
+	# 6. 音量調整
+	max = np.max(np.abs(clean_signal))
+	mixed_signal = mixed_signal / np.max(np.abs(mixed_signal)) * max
+	reverb_signal = reverb_signal / np.max(np.abs(reverb_signal)) * max
+	noise_only_target = noise_only_target / np.max(np.abs(noise_only_target)) * max
+	clean_speech_target = clean_speech_target / np.max(np.abs(clean_speech_target)) * max
+
 
 	return {
 		"noise_reverb": mixed_signal,  # (N_out, C)
