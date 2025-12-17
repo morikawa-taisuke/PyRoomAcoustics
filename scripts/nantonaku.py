@@ -95,7 +95,7 @@ def load_and_filter_params(precomputed_path: Path, rt60_range: list):
 
 	if not all_params:
 		raise ValueError(f"指定されたRT60範囲 [{rt60_range[0]}, {rt60_range[1]}] に一致するパラメータが、"
-		                 f"{precomputed_path} 内に見つかりませんでした。")
+						 f"{precomputed_path} 内に見つかりませんでした。")
 
 	print(f"    - ✅ RT60範囲に一致するパラメータ候補を {len(all_params)} 件発見しました。")
 	return all_params
@@ -153,12 +153,12 @@ def generate_dataset(config_path):
 			continue
 
 		config = process_split(config=config,
-		                       split=split,
-		                       split_speech_files=split_speech_files,
-		                       all_noise_files=all_noise_files,
-		                       all_valid_room_params=all_valid_room_params,
-		                       output_root=output_root
-		                       )
+							   split=split,
+							   split_speech_files=split_speech_files,
+							   all_noise_files=all_noise_files,
+							   all_valid_room_params=all_valid_room_params,
+							   output_root=output_root
+							   )
 
 		# メタデータを生成して保存
 		metadata = {
@@ -205,12 +205,11 @@ def process_split(config, split, split_speech_files, all_noise_files, all_valid_
 		output_dir = output_root / split
 
 		config = generate_single_file(config=config,
-		                              file_id=i,
-		                              output_dir=output_dir,
-		                              speech_filepath=speech_filepath,
-		                              all_noise_files=all_noise_files,
-		                              selected_room_param=selected_room_param
-		                              )
+									  file_id=i,
+									  output_dir=output_dir,
+									  speech_filepath=speech_filepath,
+									  all_noise_files=all_noise_files,
+									  selected_room_param=selected_room_param)
 	return config
 
 
@@ -284,6 +283,74 @@ def generate_single_file(config, file_id, output_dir, speech_filepath, all_noise
 	)
 	return config
 
+def convolution_rir(config):
+	""" 事前にシミュレートしたrirファイル(.wav)を用いてデータセットを作成 """
+	# 1. configから情報を取得
+	# マイク関係
+	mic_condition = config['mic']
+	# パス関係
+	paths = config['path']
+	speech_root = const.SPEECH_DATA_DIR / paths['sound_dir_name']	# 話者のディレクトリ
+	noise_dir = const.NOISE_DATA_DIR / paths['noise_dir_name']	# 雑音のディレクトリ
+	rir_root = const.RIR_DIR / paths['rir_room_name']
+	# マイク配置からフォルダ名を生成
+	ch = mic_condition["channel"]
+	if ch > 1:
+		array_type = mic_condition["array_type"]
+		D = mic_condition["D"]
+		mic_name = f"{ch}ch_{array_type}_{D}cm"
+	else:
+		mic_name = f"{ch}ch"
+	output_root = const.MIX_DATA_DIR / paths['rir_room_name'] / mic_name	# 出力先
+
+	for wave_type in paths['wave_type_list']:
+		output_dir = output_root / wave_type
+		# ファイルリストの取得
+		speech_dir = speech_root / wave_type
+		speech_list = get_file_list(speech_dir, '.wav')
+		noise_list = get_file_list(noise_dir, '.wav')
+		for speech_path in speech_list:
+			# 雑音, SNR, Rt60をランダムに選択
+			noise_path = Path(random.choice(noise_list))
+			snr_range = config['room']['snr']
+			snr = random.randrange(snr_range[0], snr_range[1] + snr_range[2], snr_range[2])
+			rt60_range = config['room']['snr']
+			rt60 = int(random.randrange(rt60_range[0], rt60_range[1] + rt60_range[2], rt60_range[2]) * 1000)
+
+			# ファイルの読み込み
+			clean_signal, _ = load_wav(speech_path, sr=SAMPLING_RATE)
+			noise_signal, _ = load_wav(noise_path, sr=SAMPLING_RATE)
+			rir_speech, _ = load_wav(rir_root / "speech" / f"{rt60}ms.wav", sr=SAMPLING_RATE)
+			rir_noise, _ = load_wav(rir_root / "noise" / f"{rt60}ms.wav", sr=SAMPLING_RATE)
+
+			# 残響の畳み込みと雑音の付加
+			signal_dict = convolve_and_mix(
+				clean_signal,
+				noise_signal,
+				rir_speech,
+				rir_noise,
+				snr
+			)
+
+			# ファイル保存
+			base_filename = f"{speech_path.stem}_{rt60}msec_{int(snr)}dB"
+			rec_util.save_wav(
+				output_dir / "noise_reverb" / f"{base_filename}_{noise_path.stem}_mix.wav",
+				signal_dict['noise_reverb']
+			)
+			rec_util.save_wav(
+				output_dir / "reverb_only" / f"{base_filename}_reverb.wav",
+				signal_dict['reverb_only']
+			)
+			rec_util.save_wav(
+				output_dir / "noise_only" / f"{base_filename}_{noise_path.stem}_noise.wav",
+				signal_dict['noise_only']
+			)
+			rec_util.save_wav(
+				output_dir / "clean" / f"{base_filename}_clean.wav",
+				signal_dict['clean_speech']
+			)
+
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser(description="YAML設定に基づき、音響データセットを生成します。")
@@ -295,4 +362,6 @@ if __name__ == "__main__":
 	)
 	args = parser.parse_args()
 
-	generate_dataset(args.config)
+	# generate_dataset(args.config)
+
+	convolution_rir(load_yaml_config(args.config))
