@@ -318,10 +318,10 @@ def convolution_rir(config):
 			rt60 = int(random.randrange(rt60_range[0], rt60_range[1] + rt60_range[2], rt60_range[2]) * 1000)
 
 			# ファイルの読み込み
-			clean_signal, _ = load_wav(speech_path, sr=SAMPLING_RATE)
-			noise_signal, _ = load_wav(noise_path, sr=SAMPLING_RATE)
-			rir_speech, _ = load_wav(rir_root / "speech" / f"{rt60}ms.wav", sr=SAMPLING_RATE)
-			rir_noise, _ = load_wav(rir_root / "noise" / f"{rt60}ms.wav", sr=SAMPLING_RATE)
+			clean_signal, _ = load_wav(speech_path, sr=SAMPLING_RATE)	# 音声
+			noise_signal, _ = load_wav(noise_path, sr=SAMPLING_RATE) # 雑音
+			rir_speech, _ = load_wav(rir_root / "speech" / f"{rt60}ms.wav", sr=SAMPLING_RATE)	# 話者の残響
+			rir_noise, _ = load_wav(rir_root / "noise" / f"{rt60}ms.wav", sr=SAMPLING_RATE)	# 雑音の残響
 
 			# 残響の畳み込みと雑音の付加
 			signal_dict = convolve_and_mix(
