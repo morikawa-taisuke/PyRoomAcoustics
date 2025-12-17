@@ -119,7 +119,7 @@ def generate_rirs_from_metadata2(room_parms: dict, output_dir: Path, metadata: d
 
 		# 4. RIRをWAVファイルとして保存
 		# 保存パスを生成
-		rt60 = float(rt60) * 1000
+		rt60 = int(float(rt60) * 1000)
 
 		signal_rir_path = output_dir / "speech" / f"{rt60}ms.wav"
 		noise_rir_path = output_dir / "noise" / f"{rt60}ms.wav"
