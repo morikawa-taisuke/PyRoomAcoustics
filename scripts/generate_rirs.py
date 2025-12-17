@@ -1,5 +1,4 @@
 import yaml
-from numpy.lib.type_check import array_type
 
 import mymodule.my_func
 import pyroomacoustics as pa
@@ -96,6 +95,16 @@ def generate_rirs_from_metadata2(room_parms: dict, output_dir: Path, metadata: d
 	specker_position = get_source_positions(metadata['source']['speech'], mic_center=room_dim//2)	# 話者の座標
 	noise_position = get_source_positions(metadata['source']['noise'], mic_center=room_dim//2)	# ノイズの座標
 
+	mic_config = metadata["mic"]
+	ch = mic_config["channel"]
+	if ch > 1:
+		array_type = mic_config["array_type"]
+		D = mic_config["D"]
+		mic_name = f"{ch}ch_{array_type}_{D}cm"
+	else:
+		mic_name = f"{ch}ch"
+	output_dir = output_dir / mic_name
+
 	for rt60, room_parm in tqdm(room_parms.items()):
 		# 2. 部屋を作成
 		room = pa.ShoeBox(
@@ -111,17 +120,9 @@ def generate_rirs_from_metadata2(room_parms: dict, output_dir: Path, metadata: d
 		# 4. RIRをWAVファイルとして保存
 		# 保存パスを生成
 		rt60 = float(rt60) * 1000
-		mic_config = metadata["mic"]
-		ch = mic_config["channel"]
-		if ch > 1:
-			array_type = mic_config["array_type"]
-			D = mic_config["D"]
-			mic_name = f"{ch}ch_{array_type}_{D}cm"
-		else:
-			mic_name = f"{ch}ch"
 
-		signal_rir_path = output_dir / "speech" / f"{mic_name}_{rt60}ms.wav"
-		noise_rir_path = output_dir / "noise" / f"{mic_name}_{rt60}ms.wav"
+		signal_rir_path = output_dir / "speech" / f"{rt60}ms.wav"
+		noise_rir_path = output_dir / "noise" / f"{rt60}ms.wav"
 		signal_rir_path.parent.mkdir(parents=True, exist_ok=True)
 		noise_rir_path.parent.mkdir(parents=True, exist_ok=True)
 		# (C, N) -> (N, C) に転置して保存
@@ -153,14 +154,8 @@ if __name__ == "__main__":
 
 	print(base_dir)
 	json_path = "C:/Users/kataoka-lab/Desktop/sound_data/preconpute_params/precomputed_params_2/500cm_500cm_500cm.json"
-	yaml_path = Path("C:/Users/kataoka-lab/Desktop/PyRoomAcoustics/config/sample/sample.yml")
+	yaml_path = Path("C:/Users/kataoka-lab/PycharmProjects/pythonProject/PyRoomAcoustics/config/sample/sample.yml")
 	room_parms = load_json_config(json_path)
 	metadata = load_yaml_config(yaml_path)
-	count = 0
-	for key, v in room_parms.items():
-		if count >9:
-			break
-		print(float(key), v)
-		count += 1
 
 	generate_rirs_from_metadata2(room_parms=room_parms, output_dir=output_dir, metadata=metadata)
