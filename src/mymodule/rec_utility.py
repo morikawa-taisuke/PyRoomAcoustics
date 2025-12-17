@@ -154,7 +154,7 @@ def get_mic_array(mic_config, room_center):
 		return center_pos.reshape(3, 1)  # (3, 1) の形状
 	else:
 		if array_type == 'linear':  # 線形アレイ
-			distance = mic_config['distance'] * 0.01
+			distance = mic_config['D'] * 0.01
 			mic_coords = pa.linear_2D_array(
 				center=[center_pos[0], center_pos[1]],
 				M=channels,
@@ -165,7 +165,7 @@ def get_mic_array(mic_config, room_center):
 			mic_coords_3d = np.vstack([mic_coords, np.full(channels, center_pos[2])])
 			return mic_coords_3d  # (3, M) の形状
 		elif array_type == 'circular':  # 円形アレイ
-			diameter = mic_config['diameter'] * 0.01
+			diameter = mic_config['D'] * 0.01
 			radius = diameter / 2.0
 			mic_coords = pa.circular_2D_array(
 				center=[center_pos[0], center_pos[1]],
