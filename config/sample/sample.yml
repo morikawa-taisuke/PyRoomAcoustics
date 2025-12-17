@@ -5,7 +5,7 @@ path:
   # 雑音のディレクトリ名 / ファイル名
   noise_dir_name: "DEMAND"
   # 出力先のディレクトリ名
-  output_dir_name: "VCTK_DEMAND_1ch_linear_10cm_1000cm_1000cm_1000cm2"
+  output_dir_name: "DEMAND_DEMAND"
   # 処理する音声の種類
   wave_type_list: ["train", "val", "test"]
 
@@ -18,7 +18,7 @@ room:
   # SNR (最小値，最大値，ステップ)
   snr: [-5, 10, 1]
   # 残響時間 (最小値，最大値)
-  rt60: [0.3, 1.0]
+  rt60: [0.5, 0.5]
 
 # マイクの条件
 mic:
