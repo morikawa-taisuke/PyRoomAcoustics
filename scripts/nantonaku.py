@@ -292,7 +292,6 @@ def convolution_rir(config):
 	paths = config['path']
 	speech_root = const.SPEECH_DATA_DIR / paths['sound_dir_name']	# 話者のディレクトリ
 	noise_dir = const.NOISE_DATA_DIR / paths['noise_dir_name']	# 雑音のディレクトリ
-	rir_root = const.RIR_DIR / paths['rir_room_name']
 	# マイク配置からフォルダ名を生成
 	ch = mic_condition["channel"]
 	if ch > 1:
@@ -301,6 +300,7 @@ def convolution_rir(config):
 		mic_name = f"{ch}ch_{array_type}_{D}cm"
 	else:
 		mic_name = f"{ch}ch"
+	rir_root = const.RIR_DIR / paths['rir_room_name'] / mic_name
 	output_root = const.MIX_DATA_DIR / paths['rir_room_name'] / mic_name	# 出力先
 
 	for wave_type in paths['wave_type_list']:
@@ -309,19 +309,25 @@ def convolution_rir(config):
 		speech_dir = speech_root / wave_type
 		speech_list = get_file_list(speech_dir, '.wav')
 		noise_list = get_file_list(noise_dir, '.wav')
-		for speech_path in speech_list:
+		rt60_range = config['room']['rt60']
+		rt60_start, rt60_end, rt60_step = int(rt60_range[0]*1000), int(rt60_range[1]*1000), int(rt60_range[2]*1000)
+		# print(rt60_start, rt60_end, rt60_step)
+		rt60_list = [f"{rt60}ms" for rt60 in (range(rt60_start, rt60_end + rt60_step, rt60_step))]
+		for speech_path in tqdm(speech_list):
+			speech_path = Path(speech_path)
 			# 雑音, SNR, Rt60をランダムに選択
 			noise_path = Path(random.choice(noise_list))
 			snr_range = config['room']['snr']
 			snr = random.randrange(snr_range[0], snr_range[1] + snr_range[2], snr_range[2])
-			rt60_range = config['room']['snr']
-			rt60 = int(random.randrange(rt60_range[0], rt60_range[1] + rt60_range[2], rt60_range[2]) * 1000)
+			rir_file_name =random.choice(rt60_list)
 
 			# ファイルの読み込み
 			clean_signal, _ = load_wav(speech_path, sr=SAMPLING_RATE)	# 音声
 			noise_signal, _ = load_wav(noise_path, sr=SAMPLING_RATE) # 雑音
-			rir_speech, _ = load_wav(rir_root / "speech" / f"{rt60}ms.wav", sr=SAMPLING_RATE)	# 話者の残響
-			rir_noise, _ = load_wav(rir_root / "noise" / f"{rt60}ms.wav", sr=SAMPLING_RATE)	# 雑音の残響
+			rir_speech, _ = load_wav(rir_root / "speech" / f"{rir_file_name}.wav", sr=SAMPLING_RATE)	# 話者の残響
+			rir_noise, _ = load_wav(rir_root / "noise" / f"{rir_file_name}.wav", sr=SAMPLING_RATE)	# 雑音の残響
+			rir_speech = rir_speech[np.newaxis, :]
+			rir_noise = rir_noise[np.newaxis, :]
 
 			# 残響の畳み込みと雑音の付加
 			signal_dict = convolve_and_mix(
@@ -333,7 +339,7 @@ def convolution_rir(config):
 			)
 
 			# ファイル保存
-			base_filename = f"{speech_path.stem}_{rt60}msec_{int(snr)}dB"
+			base_filename = f"{speech_path.stem}_{rir_file_name}msec_{int(snr)}dB"
 			rec_util.save_wav(
 				output_dir / "noise_reverb" / f"{base_filename}_{noise_path.stem}_mix.wav",
 				signal_dict['noise_reverb']
