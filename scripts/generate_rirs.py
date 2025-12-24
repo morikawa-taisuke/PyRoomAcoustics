@@ -1,23 +1,19 @@
-import yaml
-
-import mymodule.my_func
-import pyroomacoustics as pa
-import numpy as np
 import json
-import argparse
-from pathlib import Path
-from tqdm import tqdm
-import soundfile as sf
-import os
-from mymodule import const
-import pprint
-
 # 親ディレクトリをsys.pathに追加
 import sys
+from pathlib import Path
+
+import numpy as np
+import pyroomacoustics as pa
+import soundfile as sf
+from tqdm import tqdm
+
+from mymodule import const
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-from src.mymodule.rec_utility import compute_rirs, SAMPLING_RATE, get_source_positions, load_yaml_config, load_json_config, get_mic_array
+from src.mymodule.rec_utility import compute_rirs, SAMPLING_RATE, get_source_positions, load_yaml_config, \
+	load_json_config, get_mic_array
 
 
 def generate_rirs_from_metadata(metadata_path: Path, output_dir: Path):
@@ -35,7 +31,7 @@ def generate_rirs_from_metadata(metadata_path: Path, output_dir: Path):
 	output_dir.mkdir(parents=True, exist_ok=True)
 
 	room_params = metadata['room_dim']
-	mic_params = room_params//2
+	mic_params = room_params // 2
 	source_params = metadata['source']
 
 	# 1. Pyroomacousticsの部屋オブジェクトを作成
@@ -83,7 +79,7 @@ def generate_rirs_from_metadata(metadata_path: Path, output_dir: Path):
 
 def generate_rirs_from_metadata2(room_parms: dict, output_dir: Path, metadata: dict):
 	"""
-	metadata.jsonを読み込み、RIRを生成してWAVファイルとして保存する
+	precomputed_params.pyで計算したjsonファイルを用いて，RIRを生成してWAVファイルとして保存する
 	"""
 
 	print(f"RIRを生成します: {len(room_parms)} 件")
@@ -91,9 +87,9 @@ def generate_rirs_from_metadata2(room_parms: dict, output_dir: Path, metadata: d
 
 	# 1. 各オブジェクトの座標を取得
 	room_dim = np.array([5, 5, 5])  # 部屋の座標
-	mic_position = get_mic_array(metadata['mic'], room_dim//2)    # マイクの座標
-	specker_position = get_source_positions(metadata['source']['speech'], mic_center=room_dim//2)	# 話者の座標
-	noise_position = get_source_positions(metadata['source']['noise'], mic_center=room_dim//2)	# ノイズの座標
+	mic_position = get_mic_array(metadata['mic'], room_dim // 2)  # マイクの座標
+	specker_position = get_source_positions(metadata['source']['speech'], mic_center=room_dim // 2)  # 話者の座標
+	noise_position = get_source_positions(metadata['source']['noise'], mic_center=room_dim // 2)  # ノイズの座標
 
 	mic_config = metadata["mic"]
 	ch = mic_config["channel"]
@@ -111,7 +107,7 @@ def generate_rirs_from_metadata2(room_parms: dict, output_dir: Path, metadata: d
 			p=room_dim,
 			fs=SAMPLING_RATE,
 			max_order=room_parm['max_order'],
-			materials = pa.Material(room_parm['absorption'])
+			materials=pa.Material(room_parm['absorption'])
 		)
 
 		# 3. RIRを計算
@@ -130,6 +126,7 @@ def generate_rirs_from_metadata2(room_parms: dict, output_dir: Path, metadata: d
 		sf.write(noise_rir_path, rir_dict["rir_noise"].T, SAMPLING_RATE)
 
 	print(f"🎉 RIRの生成が完了しました。保存先: {output_dir.absolute()}")
+
 
 if __name__ == "__main__":
 	# parser = argparse.ArgumentParser(
@@ -154,7 +151,7 @@ if __name__ == "__main__":
 
 	print(base_dir)
 	json_path = "C:/Users/kataoka-lab/Desktop/sound_data/preconpute_params/precomputed_params_2/500cm_500cm_500cm.json"
-	yaml_path = Path("C:/Users/kataoka-lab/PycharmProjects/pythonProject/PyRoomAcoustics/config/sample/sample.yml")
+	yaml_path = Path("C:/Users/kataoka-lab/Desktop/PyRoomAcoustics/config/sample/sample.yml")
 	room_parms = load_json_config(json_path)
 	metadata = load_yaml_config(yaml_path)
 
