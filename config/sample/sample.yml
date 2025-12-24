@@ -3,9 +3,11 @@ path:
   # 音声データのディレクトリ名
   sound_dir_name: "VCTK"
   # 雑音のディレクトリ名 / ファイル名
-  noise_dir_name: "DEMAND"
+  noise_dir_name: "DEMAND_16kHz"
+  # RIRのディレクトリ
+  rir_room_name: "500cm_500cm_500cm/1ch"
   # 出力先のディレクトリ名
-  output_dir_name: "VCTK_DEMAND_1ch_linear_10cm_1000cm_1000cm_1000cm2"
+  output_dir_name: "500cm_500cm_500cm/1ch"
   # 処理する音声の種類
   wave_type_list: ["train", "val", "test"]
 
@@ -14,11 +16,11 @@ room:
   # シミュレーションのパラメータを保存しているディレクトリ (precompute_paramsの出力ディレクトリ名)
   # ディレクトリ内に部屋のパラメータ(JSON)が複数ある場合，ランダムで選択する
   # 単一のjsonファイルのみ(指定する部屋が1つ)の音声を作成したい場合，はprecompute_parmsの出力ディレクトリ以降のファイルパスパスを指定
-  precomputed_path: "precomputed_params_2/1000cm_1000cm_1000cm.json"
+  precomputed_path: "precomputed_params_2/500cm_500cm_500cm.json"
   # SNR (最小値，最大値，ステップ)
   snr: [-5, 10, 1]
-  # 残響時間 (最小値，最大値)
-  rt60: [0.3, 1.0]
+  # 残響時間 (最小値，最大値, ステップ)
+  rt60: [0.3, 1.0, 0.01]
 
 # マイクの条件
 mic:
@@ -29,10 +31,8 @@ mic:
   # channelが1のとき，以下の設定は無視される
   # アレイの形状 (linear / circular)
   array_type: "linear"
-  # マイクの間隔 (cm)
-  distance: 10
-  # マイクの直径 (cm)
-  diameter: 10
+  # 線形アレイの場合はマイク間隔，円形アレイの場合はアレイの直径 (cm)
+  D: 10
 
 
 # 音源の条件

@@ -150,7 +150,7 @@ def precompute_parameters(config_path):
 				e_absorption, max_order = result
 
 				# (rt60_keyは "0.50s" のように小数点以下2桁で統一)
-				rt60_key = f"{rt60_decimal:.2f}s"
+				rt60_key = f"{rt60_decimal:.2f}"
 				output_data[rt60_key] = {
 					"absorption": e_absorption,
 					"max_order": max_order
