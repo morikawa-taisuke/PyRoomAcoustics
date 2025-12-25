@@ -86,7 +86,7 @@ def serch_reverb_sec(reverb_sec, channel=1, angle=np.pi):
 		cnt += 1
 		reverb += 0.01
 	# print(f"[{cnt}]rt60:{np.mean(rt60)}")
-	print(f"max_order:{max_order}\ne_absorption:{e_absorption}")
+	print(f"\nmax_order:{max_order}\ne_absorption:{e_absorption}")
 	print(f"rt60={np.mean(rt60)}")
 	return e_absorption, max_order
 
