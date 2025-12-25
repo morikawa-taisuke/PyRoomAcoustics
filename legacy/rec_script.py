@@ -87,7 +87,7 @@ def generate_random_dataset(num_samples=1000):
 			noise_file = random.choice(noise_files)
 			snr = random.randint(snr_range[0], snr_range[1])
 			target_rt60 = round(random.uniform(reverb_range[0], reverb_range[1]), 2)  # 目標RT60をランダムに決定
-			target_rt60 = 0.9
+			# target_rt60 = 0.9
 			# print(f"{target_rt60:.2f}")
 			# exit()
 
