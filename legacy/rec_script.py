@@ -4,7 +4,7 @@ import math
 import json
 import numpy as np
 from tqdm import tqdm
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 # rec2.py から必要な関数をインポート
@@ -29,18 +29,22 @@ def get_closest_params(room_params, target_rt60):
 def generate_random_dataset(num_samples=1000):
 	"""
 	ランダムな条件下でデータセットを生成するスクリプト
-	(事前計算された部屋パラメータを使用)
+	(事前計算された部屋パラメータを使用 + マルチプロセス並列化)
 	"""
 
 	# --- 設定項目（ここを調整してください） ---
 	speech_type = "VCTK"  # 目的音声のタイプ
 	noise_type = "DEMAND"  # 雑音信号のタイプ（フォルダ名など）
 
-	subdir_list = ["test", "val", "train"]
+	subdir_list = ["train", "val", "test"]
 
 	# 事前計算ファイルのディレクトリ (プロジェクトルートからの相対パス等を想定)
 	# 必要に応じて絶対パスに変更してください
 	precomputed_dir = Path("C:/Users/kataoka-lab/Desktop/sound_data/precompute_params/precomputed_params_2")
+
+
+	# 並列処理のワーカー数 (Noneの場合はCPUコア数)
+	max_workers = None
 
 	for subdir in subdir_list:
 		# パラメータの範囲設定
@@ -58,7 +62,7 @@ def generate_random_dataset(num_samples=1000):
 		output_base_dir = Path(f"{const.MIX_DATA_DIR}/Random_Dataset_{speech_type}_{noise_type}_{ch}ch/{subdir}")
 
 		# 1. 事前計算データの読み込み
-		room_dim_int = [int(d) * 100 for d in room_dim]
+		room_dim_int = [int(d)*100 for d in room_dim]
 		json_filename = f"{room_dim_int[0]}cm_{room_dim_int[1]}cm_{room_dim_int[2]}cm.json"
 		json_path = precomputed_dir / json_filename
 
@@ -80,16 +84,15 @@ def generate_random_dataset(num_samples=1000):
 
 		print(f"Total samples to generate for {subdir}: {len(speech_files)}")
 
-		# 3. 生成ループ
-		for speech_file in tqdm(speech_files):
+		# 3. タスクリストの作成 (パラメータ決定フェーズ)
+		tasks = []
+		print("Preparing tasks...")
+		for target_file in tqdm(speech_files):
 			# --- パラメータのランダム決定 ---
-			target_file = speech_file
 			noise_file = random.choice(noise_files)
 			snr = random.randint(snr_range[0], snr_range[1])
-			target_rt60 = round(random.uniform(reverb_range[0], reverb_range[1]), 2)  # 目標RT60をランダムに決定
-			# target_rt60 = 0.9
-			# print(f"{target_rt60:.2f}")
-			# exit()
+			# 目標RT60をランダムに決定
+			target_rt60 = random.uniform(reverb_range[0], reverb_range[1])
 
 			# 雑音の到来方向（方位角）を0〜360度でランダム決定
 			angle_deg = random.randint(0, 359)
@@ -107,20 +110,33 @@ def generate_random_dataset(num_samples=1000):
 			current_out_dir = output_base_dir
 			my_func.exists_dir(current_out_dir)
 
-			# 4. 録音実行
-			recoding2(
-				wave_files=[target_file, noise_file],
-				out_dir=current_out_dir,
-				snr=snr,
-				reverb_sec=target_rt60,  # 実際に使用するRT60を使用
-				reverb_par=reverb_par,
-				channel=ch,
-				distance=mic_distance,
-				is_split=False,
-				angle=angle_rad,
-				angle_name=angle_name
-			)
+			# recoding2 に渡す引数を辞書にまとめる
+			task_kwargs = {
+				"wave_files": [target_file, noise_file],
+				"out_dir": current_out_dir,
+				"snr": snr,
+				"reverb_sec": target_rt60,  # 実際に使用するRT60を使用
+				"reverb_par": reverb_par,
+				"channel": ch,
+				"distance": mic_distance,
+				"is_split": False,
+				"angle": angle_rad,
+				"angle_name": angle_name
+			}
+			tasks.append(task_kwargs)
 
+		# 4. 並列実行フェーズ
+		print(f"Executing {len(tasks)} tasks in parallel...")
+		with ProcessPoolExecutor(max_workers=max_workers) as executor:
+			# タスクを投入
+			futures = [executor.submit(recoding2, **kwargs) for kwargs in tasks]
+
+			# 進捗表示 (完了したものから順次)
+			for future in tqdm(as_completed(futures), total=len(futures), desc=f"Processing {subdir}"):
+				try:
+					future.result()  # エラーがあればここで例外が発生
+				except Exception as e:
+					print(f"Task failed with error: {e}")
 
 if __name__ == "__main__":
 	# シード値を固定したい場合は以下を有効化
