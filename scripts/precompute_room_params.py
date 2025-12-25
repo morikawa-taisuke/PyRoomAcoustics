@@ -117,6 +117,7 @@ def precompute_parameters(config_path):
 	room_ys = generate_range(param_ranges['room_dimensions']['y_m'])
 	room_zs = generate_range(param_ranges['room_dimensions']['z_m'])
 	rt60s_target = generate_range(param_ranges['rt60_sec']['value'])
+	# rt60s_target.append(decimal.Decimal(str(0.00)))	# clean用のrirを生成できるように追加
 	print(rt60s_target)
 
 	print(f"計算対象の部屋の組み合わせ総数: {len(room_xs) * len(room_ys) * len(room_zs)}")
@@ -135,6 +136,11 @@ def precompute_parameters(config_path):
 		print(x,y,z)
 		room_dim = [float(x), float(y), float(z)]
 		output_data = {}
+		rt60_key = f"0.00"
+		output_data[rt60_key] = {
+			"absorption": 1.00,
+			"max_order": 0
+		}
 
 		# --- RT60のループ ---
 		# (tqdmをネストさせ、どのRT60を計算中か表示)
@@ -149,7 +155,7 @@ def precompute_parameters(config_path):
 			if result is not None:
 				e_absorption, max_order = result
 
-				# (rt60_keyは "0.50s" のように小数点以下2桁で統一)
+				# (rt60_keyは "0.50" のように小数点以下2桁で統一)
 				rt60_key = f"{rt60_decimal:.2f}"
 				output_data[rt60_key] = {
 					"absorption": e_absorption,
