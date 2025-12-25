@@ -1,6 +1,7 @@
 import os
 import random
 import math
+import json
 import numpy as np
 from tqdm import tqdm
 from concurrent.futures import ProcessPoolExecutor
@@ -12,19 +13,34 @@ from mymodule import const, my_func
 import pyroomacoustics as pa
 
 
+def load_room_params(json_path):
+	"""JSONファイルから部屋パラメータを読み込む"""
+	with open(json_path, 'r') as f:
+		return json.load(f)
+
+
+def get_closest_params(room_params, target_rt60):
+	"""目標RT60に最も近いパラメータを取得する"""
+	# キー（"0.30s"など）から数値を取得し、差分が最小のものを選ぶ
+	closest_key = min(room_params.keys(), key=lambda k: abs(float(k.replace('s', '')) - target_rt60))
+	return room_params[closest_key], float(closest_key.replace('s', ''))
+
+
 def generate_random_dataset(num_samples=1000):
 	"""
 	ランダムな条件下でデータセットを生成するスクリプト
+	(事前計算された部屋パラメータを使用)
 	"""
 
 	# --- 設定項目（ここを調整してください） ---
 	speech_type = "VCTK"  # 目的音声のタイプ
 	noise_type = "DEMAND"  # 雑音信号のタイプ（フォルダ名など）
 
+	subdir_list = ["test", "val", "train"]
 
-	subdir_list = ["train",
-				   # "val",
-				   "test"]
+	# 事前計算ファイルのディレクトリ (プロジェクトルートからの相対パス等を想定)
+	# 必要に応じて絶対パスに変更してください
+	precomputed_dir = Path("C:/Users/kataoka-lab/Desktop/sound_data/precompute_params/precomputed_params_2")
 
 	for subdir in subdir_list:
 		# パラメータの範囲設定
@@ -41,48 +57,62 @@ def generate_random_dataset(num_samples=1000):
 		noise_dir = f"{const.SAMPLE_DATA_DIR}/noise/{noise_type}"  # 雑音が複数入っているフォルダ
 		output_base_dir = Path(f"{const.MIX_DATA_DIR}/Random_Dataset_{speech_type}_{noise_type}_{ch}ch/{subdir}")
 
-		# 1. データのリストを取得
+		# 1. 事前計算データの読み込み
+		room_dim_int = [int(d) * 100 for d in room_dim]
+		json_filename = f"{room_dim_int[0]}cm_{room_dim_int[1]}cm_{room_dim_int[2]}cm.json"
+		json_path = precomputed_dir / json_filename
+
+		if not json_path.exists():
+			print(f"Error: 事前計算ファイルが見つかりません: {json_path}")
+			print("scripts/precompute_room_params.py を実行してパラメータを生成してください。")
+			return
+
+		print(f"Loading room params from: {json_path}")
+		room_params_data = load_room_params(json_path)
+
+		# 2. データのリストを取得
 		speech_files = my_func.get_file_list(speech_dir)
 		noise_files = my_func.get_file_list(noise_dir)  # フォルダ内の全wav取得を想定
 
 		if not speech_files or not noise_files:
-			print("Error: 音声ファイルまたは雑音ファイルが見つかりません。")
-			return
+			print(f"Error: 音声ファイルまたは雑音ファイルが見つかりません。\nSpeech: {speech_dir}\nNoise: {noise_dir}")
+			continue  # 次のsubdirへ
 
-		print(f"Total samples to generate: {num_samples}")
+		print(f"Total samples to generate for {subdir}: {len(speech_files)}")
 
-		# 2. 生成ループ
-		for i in tqdm(range(len(speech_files))):
+		# 3. 生成ループ
+		for speech_file in tqdm(speech_files):
 			# --- パラメータのランダム決定 ---
-			target_file = random.choice(speech_files)
+			target_file = speech_file
 			noise_file = random.choice(noise_files)
-
 			snr = random.randint(snr_range[0], snr_range[1])
-			rt60 = random.uniform(reverb_range[0], reverb_range[1])  # 範囲内から一様分布で
+			target_rt60 = round(random.uniform(reverb_range[0], reverb_range[1]), 2)  # 目標RT60をランダムに決定
+			target_rt60 = 0.9
+			# print(f"{target_rt60:.2f}")
+			# exit()
 
 			# 雑音の到来方向（方位角）を0〜360度でランダム決定
 			angle_deg = random.randint(0, 359)
 			angle_rad = math.radians(angle_deg)
 			angle_name = f"{angle_deg:03}deg"
 
-			# --- 残響パラメータの計算 ---
-			# 毎回 serch_reverb_sec を回すと遅いため、簡易的に Sabine の式で計算
-			# もし精度を優先する場合は serch_reverb_sec を使用してください
-			e_absorption, max_order = pa.inverse_sabine(rt60, room_dim)
+			# --- 残響パラメータの取得 (JSONから) ---
+			params = room_params_data[f"{target_rt60:.2f}"]
+
+			e_absorption = params['absorption']
+			max_order = params['max_order']
 			reverb_par = (e_absorption, max_order)
 
-			# 出力ディレクトリの設定（サブディレクトリを分けると管理しやすい）
-			# 例: out_dir/snr_10/rt60_0450/
-			# current_out_dir = os.path.join(output_base_dir, f"sample_{i:05}")
+			# 出力ディレクトリの設定
 			current_out_dir = output_base_dir
 			my_func.exists_dir(current_out_dir)
 
-			# 3. 録音実行
+			# 4. 録音実行
 			recoding2(
 				wave_files=[target_file, noise_file],
 				out_dir=current_out_dir,
 				snr=snr,
-				reverb_sec=rt60,  # ファイル名用
+				reverb_sec=target_rt60,  # 実際に使用するRT60を使用
 				reverb_par=reverb_par,
 				channel=ch,
 				distance=mic_distance,
