@@ -53,13 +53,13 @@ def generate_random_dataset(num_samples=1000):
 		room_dim = np.array([5.0, 5.0, 5.0])  # 部屋のサイズ
 
 		# マイク設定
-		ch = 1  # マイク数
-		mic_distance = 10  # マイク間隔 [cm]
+		ch = 2  # マイク数
+		mic_distance = 3  # マイク間隔 [cm]
 
 		# パス設定
 		speech_dir = f"{const.SAMPLE_DATA_DIR}/speech/{speech_type}/{subdir}"
 		noise_dir = f"{const.SAMPLE_DATA_DIR}/noise/{noise_type}"  # 雑音が複数入っているフォルダ
-		output_base_dir = Path(f"{const.MIX_DATA_DIR}/Random_Dataset_{speech_type}_{noise_type}_{ch}ch/{subdir}")
+		output_base_dir = Path(f"{const.MIX_DATA_DIR}/Random_Dataset_{speech_type}_{noise_type}_{ch}ch_linear_{mic_distance}cm/{subdir}")
 
 		# 1. 事前計算データの読み込み
 		room_dim_int = [int(d)*100 for d in room_dim]
