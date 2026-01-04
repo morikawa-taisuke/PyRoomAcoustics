@@ -1,7 +1,7 @@
-numpy
-scipy
-matplotlib
-pyroomacoustics
 soundfile
 tqdm
+pandas
+scipy
+matplotlib
+librosa
 PyYAML
