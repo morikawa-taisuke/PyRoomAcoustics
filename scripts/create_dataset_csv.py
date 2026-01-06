@@ -123,7 +123,7 @@ if __name__ == "__main__":
         description="データセットディレクトリを解析し、全ファイルの情報をまとめたCSVを作成します。"
     )
     parser.add_argument(
-        "dataset_root",
+        "--dataset_root",
         type=str,
         help="`new_signal_noise.py`で生成されたデータセットのルートディレクトリパス。"
     )
