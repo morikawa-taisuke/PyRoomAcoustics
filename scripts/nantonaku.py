@@ -233,7 +233,7 @@ def generate_single_file(config, file_id, output_dir, speech_filepath, all_noise
 
 	room_center = np.array(room_dim) / 2.0
 	mic_coords = get_mic_array(config['mic'], room_center)
-	speech_pos_list = get_source_positions(config['source']['speech'], room_center)
+	speech_pos_list = get_source_positions(config['source']['speech'], mic_center=room_center)
 	noise_pos_list = get_source_positions(config['source']['noise'], room_center)
 	# print(type(config))
 	position = {'room_dim': room_dim, 'mic': mic_coords.T, 'speech': speech_pos_list, 'noise': noise_pos_list}
