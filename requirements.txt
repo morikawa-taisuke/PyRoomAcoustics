@@ -3,4 +3,4 @@ tqdm
 pandas
 scipy
 matplotlib
-librosa
+pyroomacoustics
