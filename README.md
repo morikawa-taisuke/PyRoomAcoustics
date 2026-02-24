@@ -2,72 +2,65 @@
 
 ## 概要
 
-`pyroomacoustics` を用いた音響シミュレーションにより、機械学習（音源分離・強調など）用のデータセットを作成するリポジトリです。
-`pyroomacoustics` の `inverse_sabine` 関数の誤差を考慮し、事前に正確なパラメータを探索してからデータセット生成を行うフローを採用しています。
+`pyroomacoustics` を用いた音響シミュレーションにより、機械学習（音源強調・分離など）用のデータセットを作成するリポジトリです。最新のアップデートにより、複雑だった複数スクリプトのフローが1つの設定ファイル（YAML）と実行スクリプトに統合され、さらにマルチプロセスでの高速化に対応しました。
 
-## ワークフロー
+指定した音声データと雑音データから、空間シミュレーション（Image Source Method）を用いて以下の4種類の波形データを同時に生成し、学習用のCSVインデックスまで自動で出力します。
+
+1. **Clean**: 教師用の元の音声
+2. **Noise Only**: 雑音ソースのみを含んだ音声
+3. **Reverb Only**: 部屋の残響のみを含んだ音声
+4. **Noise + Reverb**: 雑音と部屋の残響を両方含んだ音声
+
+## 主な機能
+
+*   **単一スクリプト化**: 従来のように「RIRの事前計算」と「合成」、「CSV出力」を別々に実行す​​る必要はありません。
+*   **マルチプロセッシング**: CPUコアを最大限に活用し、シミュレーション処理にかかる膨大な時間を大幅に削減します。
+*   **クリッピング防止**: 全ての出力ファイルを保存直前に最大振幅 `0.9` で自動ノーマライズし、音割れを防ぎます。
+*   **絶対パス管理**: 入出力ディレクトリは `src/mymodule/const.py` にて一元管理。作業ディレクトリの場所に依存せずスクリプトを実行可能です。
+*   **柔軟な設定**: 部屋の寸法、マイク位置、話者・雑音源の座標、SNR（ランダム範囲/固定）、残響時間（ランダム範囲/固定）のすべてを `dataset_config.yaml` 1つで自在にコントロールできます。
+
+---
+
+## ワークフロー (新アーキテクチャ)
 
 ```mermaid
 graph TD
-    A[pre_compute_room_params.py] -->|パラメータ探索| B(パラメータ設定ファイル)
-    B --> C[nantonaku.py]
-    D[Clean Speech] --> C
-    E[Noise] --> C
-    C -->|データセット生成| F(Mixed Audio Files)
-    F --> G[create_dataset_csv]
-    G -->|CSV生成| H(dataset.csv)
+    A[dataset_config.yaml] -->|設定読込| B(src/generate_dataset.py)
+    C[Clean Speech] --> B
+    D[Noise] --> B
+    B -->|マルチプロセス生成| E[4種類の出力ファイル]
+    B -->|同時生成| F[dataset.csv]
 ```
-
-## 必要なライブラリ
-
-`requirements.txt` を参照してください。
-
-```bash
-pip install -r requirements.txt
-pip install -e .
-```
-
-## 使い方
-
-### ステップ 1: 部屋パラメータの探索
-
-`pyroomacoustics.inverse_sabine` 関数には誤差があるため、目的の残響時間（RT60）になるようなパラメータ（吸音率など）を事前に探索します。
-
-```bash
-python scripts/pre_compute_room_params.py
-```
-
-  * **出力:** 正確なRT60を実現するためのパラメータ設定ファイルが出力されます（例: JSON形式など）。
-
-### ステップ 2: データセットの生成
-
-探索されたパラメータを用いて、実際に部屋のシミュレーションを行い、音声と雑音を畳み込んでデータセットを作成します。
-
-```bash
-python scripts/nantonaku.py
-```
-
-  * **入力:** ステップ1で求めたパラメータ、クリーン音声、雑音データ
-  * **処理:** ランダムな部屋形状の生成、RIRの計算、畳み込み、SNR調整
-  * **出力:** 残響・雑音付き音声ファイル（WAV）
-
-### ステップ 3: 学習用CSVの作成
-
-生成されたデータセットのファイルパスをまとめ、機械学習モデルの入力として使えるCSVファイルを生成します。
-
-```bash
-python scripts/create_dataset_csv.py
-```
-
-  * **出力:** データセットのパスやメタデータが記載されたCSVファイル（例: `dataset.csv`）
 
 ## ディレクトリ構成
 
-  * `mymodule/`: 音響処理の共通ライブラリ
-      * `rec_utility.py`: パラメータ探索 (`search_reverb_sec`)、シミュレーション、SNR調整などのコア機能
-      * `my_func.py`: ファイル操作等のユーティリティ
-  * `scripts/`: 実行用スクリプト
-      * `pre_compute_room_params.py`: 部屋パラメータ探索スクリプト
-      * `nantonaku.py`: データセット生成メインスクリプト
-      * `create_dataset_csv`: CSV生成スクリプト（`create_audio_paths_csv.py` 相当）
-  * `configs/`: 設定ファイル置き場
+*   `config/`
+    *   `dataset_config.yaml`: データ生成の挙動を決定するメイン設定ファイルです。
+*   `src/`
+    *   `generate_dataset.py`: データセット生成のメインスクリプトです。
+    *   `mymodule/`: `const.py` (パスの定数定義) 等の共通ライブラリ。
+*   `archive/`
+    *   過去に使用されていた処理系のスクリプトやレガシーロジックのバックアップです（参考用）。
+
+---
+
+## 使い方
+
+### ステップ 1: パスの確認
+`src/mymodule/const.py` を開き、必要に応じて `SOUND_DATA_DIR` 等のルートパスがお使いの環境と合っているか確認・修正してください。
+
+### ステップ 2: 設定ファイルの編集
+`config/dataset_config.yaml` を目的に合わせて編集します。ここで指定する各種のディレクトリ（`speech_dir` 等）の起点は `const.py` の定数となっています。
+
+### ステップ 3: スクリプトの実行
+プロジェクトのルートディレクトリから、以下のコマンドを実行するだけでデータセットが生成されます。
+
+```bash
+# デフォルト設定 (config/dataset_config.yaml) を使用して実行
+python src/generate_dataset.py
+
+# または別の設定ファイルを指定して実行
+python src/generate_dataset.py --config config/another_config.yaml
+```
+
+処理の進捗はターミナル上にプログレスバーで表示され、最終的にCSVファイルが出力フォルダに保存されたメッセージが出れば完了です。

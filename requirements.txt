@@ -3,5 +3,5 @@ tqdm
 pandas
 scipy
 matplotlib
-librosa
 PyYAML
+pyroomacoustics

@@ -2,14 +2,14 @@ from pathlib import Path
 
 """
 construction
-設定
+このファイルは，PyroomAcousticsで使用する音源データのディレクトリ構造を定義するファイルです．
 
 """
 # SOUND_DATA_DIR = Path('/Users/a/Documents/sound_data/')
-SOUND_DATA_DIR = Path('C:/Users/kataoka-lab/Desktop/sound_data/')
+SOUND_DATA_DIR = Path('C:/Users/adomin/Documents/sound_data/')
 
 SAMPLE_DATA_DIR = SOUND_DATA_DIR / 'sample_data'
-SPEECH_DATA_DIR = SAMPLE_DATA_DIR / 'speech'
+SPEECH_DATA_DIR = SAMPLE_DATA_DIR / 'speaker'
 NOISE_DATA_DIR = SAMPLE_DATA_DIR / 'noise'
 
 MIX_DATA_DIR = SOUND_DATA_DIR / 'mix_data'
