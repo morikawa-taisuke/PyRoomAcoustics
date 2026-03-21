@@ -10,7 +10,7 @@ construction
 
 """
 # SOUND_DATA_DIR = Path('/Users/a/Documents/sound_data/')
-SOUND_DATA_DIR = Path('C:/Users/adomin/Documents/sound_data/')
+SOUND_DATA_DIR = Path('D:/sound_data/')
 
 SAMPLE_DATA_DIR = SOUND_DATA_DIR / 'sample_data'
 SPEECH_DATA_DIR = SAMPLE_DATA_DIR / 'speaker'

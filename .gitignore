@@ -4,5 +4,6 @@
 .idea/
 */PyRoomAcoustics.iml
 __pycache__/
+.venv/
 
 /config/*.yml

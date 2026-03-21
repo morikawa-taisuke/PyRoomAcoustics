@@ -15,6 +15,9 @@ from pathlib import Path
 from scipy.signal import fftconvolve
 import concurrent.futures
 from tqdm import tqdm
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent / "src"))
 from core import const
 
 def load_wav(filepath):
@@ -168,11 +171,11 @@ def generate_dataset(config_path):
         config = yaml.safe_load(f)
         
     # root_dir = Path(__file__).parent.parent
-    root_dir = const.SAMPLE_DATA_DIR
+    # root_dir = const.SAMPLE_DATA_DIR
 
-    speech_root = root_dir / config['paths']['speech_dir']
-    noise_dir = root_dir / config['paths']['noise_dir']
-    output_root = root_dir / config['paths']['output_dir']
+    speech_root = const.SPEECH_DATA_DIR / config['paths']['speech_dir']
+    noise_dir = const.NOISE_DATA_DIR / config['paths']['noise_dir']
+    output_root = const.MIX_DATA_DIR / config['paths']['output_dir']
 
     # print(f"root_dir: {root_dir}")
     # print(f"speech_root: {speech_root}")
