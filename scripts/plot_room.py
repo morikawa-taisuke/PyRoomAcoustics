@@ -1,3 +1,7 @@
+"""
+【役割】
+シミュレーションされた部屋の2D/3D空間（マイク・音源配置）を可視化するスクリプト
+"""
 import sys
 
 import matplotlib.pyplot as plt

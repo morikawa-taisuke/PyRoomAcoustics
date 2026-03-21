@@ -1,3 +1,7 @@
+"""
+【役割】
+合成データセットのメタデータやパス情報をまとめ、管理用のCSVを生成するスクリプト
+"""
 # scripts/create_dataset_csv.py
 
 import argparse

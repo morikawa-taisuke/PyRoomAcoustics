@@ -1,3 +1,7 @@
+"""
+【役割】
+インパルス応答(RIR)の周波数特性やスペクトログラムをプロットして分析するスクリプト
+"""
 """ 参考サイト
  https://www.wizard-notes.com/entry/python/pyroomacoustics-compute-rir
 """

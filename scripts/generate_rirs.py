@@ -1,3 +1,7 @@
+"""
+【役割】
+指定された部屋条件に基づき、PyRoomAcousticsで多量のインパルス応答(RIR)を生成するスクリプト
+"""
 import json
 # 親ディレクトリをsys.pathに追加
 import sys

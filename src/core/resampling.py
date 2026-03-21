@@ -1,3 +1,7 @@
+"""
+【役割】
+WAVファイルのリサンプリング処理やサンプリングレートの確認を行うモジュール
+"""
 import argparse
 from pathlib import Path
 import soundfile as sf

@@ -1,3 +1,7 @@
+"""
+【役割】
+音声ファイルのパスを高速で走査し、データセット生成用のCSVを出力するスクリプト
+"""
 import csv
 from pathlib import Path
 import argparse

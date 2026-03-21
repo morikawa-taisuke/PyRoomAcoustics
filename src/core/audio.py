@@ -1,3 +1,7 @@
+"""
+【役割】
+音声ファイルの読み書きや変換など、基本的な音声データ処理を行うモジュール
+"""
 import soundfile as sf
 import numpy as np
 import math

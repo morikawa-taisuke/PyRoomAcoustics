@@ -1,3 +1,7 @@
+"""
+【役割】
+目標とする残響時間(RT60)に合致する部屋のシミュレーションパラメータを事前計算するスクリプト
+"""
 import pyroomacoustics as pa
 import numpy as np
 import json

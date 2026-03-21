@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+"""
+【役割】
+ファイルパスの操作やディレクトリ作成などのファイルシステム系ユーティリティ
+"""
 import os
 import numpy as np
 

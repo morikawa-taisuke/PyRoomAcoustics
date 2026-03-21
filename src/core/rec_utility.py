@@ -1,3 +1,7 @@
+"""
+【役割】
+PyRoomAcousticsを用いた計算やSNR調整など、音響処理に関するコア関数群
+"""
 # src/mymodule/rec_utils.py
 import json
 import random

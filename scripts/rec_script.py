@@ -1,3 +1,7 @@
+"""
+【役割】
+PyRoomAcousticsを用いた部屋空間の構築と波形出力を行うためのシミュレーション実行スクリプト
+"""
 import os
 import random
 import math
