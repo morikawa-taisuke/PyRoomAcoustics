@@ -4,86 +4,59 @@
 """
 import soundfile as sf
 import numpy as np
-import math
-
-from core import rec_config as rec_conf
-from . import utils
-
-def get_wave_sample(wave_path):
-    """wave_pathの中で最も長い音声長を返す
- 
-    :param wave_path: 音源のパス
-    :return　num_samples: 最長の音声長
-    """
-    num_samples = 0
-    for wave_file in wave_path:
-        info = sf.info(wave_file)
-        if num_samples < info.frames:
-            num_samples = info.frames
-    return num_samples
 
 
-def load_wave_data(wave_path):
-    """音源を読み込む
- 
-    :param wave_path: 音源のパス
-    :return wave_data: 読み込んだwaveデータ [音声長,]
-    """
-    wave_data, _ = sf.read(wave_path, dtype='float32')
-    return wave_data
+def load_wav(filepath):
+    """soundfileを使用してWAVファイルを読み込み、データとサンプリングレートを返す"""
+    data, sr = sf.read(filepath, dtype='float32')
+    return data, sr
 
 
-def save_wave(signal, file_name, sample_rate=rec_conf.sampling_rate):
-    """wavfileの書き込み
- 
-    :param signal: wavデータ
-    :param file_name: ファイル名
-    :param sample_rate: サンプリングレート
-    """
-    """ 出力先のディレクトリの確認 """
-    utils.exists_dir(utils.get_dir_name(file_name))
-    """ データを書き込み """
-    sf.write(file_name, signal, sample_rate, subtype='PCM_16')
+def save_wav(filepath, data, sr):
+    """soundfileを使用してWAVファイルを保存する"""
+    sf.write(filepath, data, sr)
 
 
-def get_wave_power(wave_data):
-    """音源のパワーを計算する
- 
-    :param wave:
-    :return power:
-    """
-    power = sum(wave_data ** 2)
-    return power
+def random_crop(noise, target_length):
+    """対象の長さに合わせてノイズをランダムにクロップ（不足分は繰り返し）する"""
+    if len(noise) <= target_length:
+        repeat_times = int(np.ceil(target_length / len(noise)))
+        noise = np.tile(noise, repeat_times)
+    start = np.random.randint(0, len(noise) - target_length + 1)
+    return noise[start:start + target_length]
 
 
-def get_snr(signal_pawer, noise_pawer):
-    """引数のSNRを計算する
- 
-    :param signal_pawer: 目的信号
-    :param noise_pawer:  雑音信号
-    :return snr: SNR
-    """
-    snr = 10 * math.log10(signal_pawer / noise_pawer)
-    return snr
+def mix_snr(speech, noise, snr_db):
+    """指定されたSNR(dB)になるよう、ノイズのスケールを調整して重畳する"""
+    speech_power = np.mean(speech ** 2)
+    noise_power = np.mean(noise ** 2)
+    
+    if noise_power < 1e-10:
+        return speech
+
+    target_noise_power = speech_power / (10 ** (snr_db / 10))
+    noise_scale = np.sqrt(target_noise_power / noise_power)
+    
+    return speech + noise * noise_scale
 
 
-def get_scale_noise(signal_data, noise_data, snr):
-    """指定したSNRに雑音の大きさを調整
- 
-    :param signal_data: 目的信号
-    :param noise_data: 雑音
-    :param snr: SNR
-    :return scale_noise_data: 調整後の雑音 [1,音声長]
-    """
-    signal_pawer = get_wave_power(signal_data)  # 目的信号のパワーを計算
-    noise_pawer = get_wave_power(noise_data)  # 雑音信号のパワーを計算
-    ten_pow = pow(10, snr / 10)  # 10^(snr/10)　10の(snr/10)乗を計算
-    squared_alpah = signal_pawer / (noise_pawer * ten_pow)  # α^2を計算
-    alpha = math.sqrt(squared_alpah)  # αを計算
+def normalize_audio(audio, max_amplitude=0.9):
+    """最大振幅を max_amplitude に収め、音割れを防ぐ（ノーマライズ）"""
+    max_val = np.max(np.abs(audio))
+    if max_val > 0:
+        return audio * (max_amplitude / max_val)
+    return audio
 
-    scale_noise_data = alpha * noise_data  # 雑音信号の大きさを調整
-    after_snr = round(get_snr(signal_pawer, get_wave_power(scale_noise_data)))
 
-    if after_snr != snr:
-        print(f"not:{after_snr},{snr}")
-    return scale_noise_data
+def get_scale_noise(signal_data, noise_data, snr_db):
+    '''目的信号に対するSNR(dB)に合わせて雑音データのスケールを調整する'''
+    signal_power = np.mean(signal_data ** 2)
+    noise_power = np.mean(noise_data ** 2)
+
+    if noise_power < 1e-10:
+        return np.zeros_like(noise_data)
+
+    target_noise_power = signal_power / (10 ** (snr_db / 10))
+    noise_scale = np.sqrt(target_noise_power / noise_power)
+
+    return noise_data * noise_scale

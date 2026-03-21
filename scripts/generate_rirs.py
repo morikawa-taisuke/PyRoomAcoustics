@@ -16,8 +16,9 @@ from core import const
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-from src.mymodule.rec_utility import compute_rirs, SAMPLING_RATE, get_source_positions, load_yaml_config, \
+from core.rec_utility import compute_rirs, get_source_positions, load_yaml_config, \
 	load_json_config, get_mic_array
+from core.dsp_params import sampling_rate as SAMPLING_RATE
 
 
 def generate_rirs_from_metadata(metadata_path: Path, output_dir: Path):

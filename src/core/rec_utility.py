@@ -12,36 +12,9 @@ import numpy as np
 import pyroomacoustics as pa
 import soundfile as sf
 import yaml
+from core import audio
 
-# --- (旧: rec_config.py の内容) ---
-# simulation.py または constants.py に移動することを推奨
-SAMPLING_RATE = 16000
-
-
-# --- (旧: reverb_feater.py の内容) ---
-# audio.py に移動することを推奨
-def calculate_c50(rir, fs=SAMPLING_RATE):
-	t_50ms = int(0.050 * fs)
-	energy = rir ** 2
-	e_early = np.sum(energy[:t_50ms])
-	e_late = np.sum(energy[t_50ms:])
-	if e_late > 0:
-		c50 = 10 * np.log10(e_early / e_late)
-	else:
-		c50 = np.inf
-	return c50
-
-
-def calculate_d50(rir, fs=SAMPLING_RATE):
-	t_50ms = int(0.050 * fs)
-	energy = rir ** 2
-	e_early = np.sum(energy[:t_50ms])
-	e_total = np.sum(energy)
-	if e_total > 0:
-		d50 = (e_early / e_total) * 100
-	else:
-		d50 = 0.0
-	return d50
+from core.dsp_params import sampling_rate as SAMPLING_RATE
 
 
 # ===================================================================
@@ -64,35 +37,6 @@ def load_json_config(config_path):
 	return config
 
 
-def load_wav(filepath, sr=SAMPLING_RATE):
-	"""
-    soundfileを使用してWAVファイルを読み込む
-    (リサンプリングとモノラル化も行う)
-    """
-	data, loaded_sr = sf.read(filepath, dtype='float32', always_2d=True)
-
-	# モノラルに変換
-	if data.shape[1] > 1:
-		data = np.mean(data, axis=1)
-	else:
-		data = data[:, 0]
-
-	# リサンプリング (TODO: 必要ならresampyなどを追加)
-	if loaded_sr != sr:
-		raise NotImplementedError(
-			f"Resampling required: {filepath} ({loaded_sr}Hz) != target ({sr}Hz)"
-		)
-
-	return data, sr
-
-
-def save_wav(filepath: Path, data: np.ndarray, sr=SAMPLING_RATE):
-	"""
-    soundfileを使用してWAVファイルを保存する (マルチチャンネル対応)
-    (N,) または (N, C) のNumpy配列を受け取る
-    """
-	filepath.parent.mkdir(parents=True, exist_ok=True)
-	sf.write(filepath, data, sr)
 
 
 def get_file_list(dir_path: Path, ext: str = '.wav'):
@@ -326,24 +270,6 @@ def compute_rirs(room: pa.ShoeBox, mic_coords: np.ndarray,
 	return rir_dict
 
 
-def get_wave_power(wave_data):
-	"""音源のパワーを計算する (旧: rec_utils.py)"""
-	# チャンネル全体で平均パワーを計算
-	return np.mean(wave_data ** 2)
-
-
-def get_scale_noise(signal_data, noise_data, snr_db):
-	"""指定したSNRに雑音の大きさを調整 (旧: rec_utils.py)"""
-	signal_power = get_wave_power(signal_data)
-	noise_power = get_wave_power(noise_data)
-
-	if noise_power < 1e-10:
-		return np.zeros_like(noise_data)
-
-	target_noise_power = signal_power / (10 ** (snr_db / 10))
-	noise_scale = np.sqrt(target_noise_power / noise_power)
-
-	return noise_data * noise_scale
 
 
 def convolve_and_mix(clean_signal: np.ndarray, noise_signal: np.ndarray, rir_speech: np.ndarray, rir_noise: np.ndarray, snr_db: float) -> dict:
@@ -399,8 +325,8 @@ def convolve_and_mix(clean_signal: np.ndarray, noise_signal: np.ndarray, rir_spe
 	reverb_noise = fftconvolve(noise_segment_multi, rir_noise_col, mode='full', axes=0)[:target_len]
 
 	# 4. SNR調整
-	scaled_reverb_noise = get_scale_noise(reverb_signal, reverb_noise, snr_db)  # noise_reverb用
-	scaled_dry_noise = get_scale_noise(clean_signal, noise_segment, snr_db) # noise_only用
+	scaled_reverb_noise = audio.get_scale_noise(reverb_signal, reverb_noise, snr_db)  # noise_reverb用
+	scaled_dry_noise = audio.get_scale_noise(clean_signal, noise_segment, snr_db) # noise_only用
 
 	# 5. 混合 (残響あり + 残響ありノイズ)
 	mixed_signal = reverb_signal + scaled_reverb_noise  # noise_reverb
@@ -490,8 +416,8 @@ def convolve_and_mix2(clean_signal: np.ndarray, noise_signal: np.ndarray, rir_sp
 
 
 	# 4. SNR調整
-	scaled_reverb_noise = get_scale_noise(reverb_signal, reverb_noise, snr_db)  # noise_reverb用
-	scaled_dry_noise = get_scale_noise(clean_reverb_signal, clean_reverb_noise, snr_db) # noise_only用
+	scaled_reverb_noise = audio.get_scale_noise(reverb_signal, reverb_noise, snr_db)  # noise_reverb用
+	scaled_dry_noise = audio.get_scale_noise(clean_reverb_signal, clean_reverb_noise, snr_db) # noise_only用
 
 	# 5. 混合 (残響あり + 残響ありノイズ)
 	mixed_signal = reverb_signal + scaled_reverb_noise  # noise_reverb

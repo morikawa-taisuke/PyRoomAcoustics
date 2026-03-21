@@ -9,11 +9,11 @@ paths:
     - test
   
   # 音声・雑音データのルートディレクトリ (音源データのルートディレクトリからの相対パス)
-  speech_dir: "VCTK"
+  speech_dir: "JA"
   noise_dir: "DEMAND_16kHz"
   
   # 生成されたデータセットの保存先ディレクトリ
-  output_dir: "VCTK_DEMAND"
+  output_dir: "JA_DEMAND"
 
 room_params:
   # 部屋の寸法 (x, y, z) [m]
