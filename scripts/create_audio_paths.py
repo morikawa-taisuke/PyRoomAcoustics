@@ -6,8 +6,8 @@ import concurrent.futures
 from tqdm import tqdm
 
 try:
-    from mymodule import const
-    from mymodule.rec_utility import load_yaml_config
+    from core import const
+    from core.rec_utility import load_yaml_config
 except ImportError:
     print("=" * 50)
     print("❌ エラー: 'mymodule' が見つかりません。")

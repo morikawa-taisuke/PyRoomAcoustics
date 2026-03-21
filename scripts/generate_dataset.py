@@ -11,7 +11,7 @@ from pathlib import Path
 from scipy.signal import fftconvolve
 import concurrent.futures
 from tqdm import tqdm
-from mymodule import const
+from core import const
 
 def load_wav(filepath):
     data, sr = sf.read(filepath, dtype='float32')

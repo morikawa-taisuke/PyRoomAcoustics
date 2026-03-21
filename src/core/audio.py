@@ -2,8 +2,8 @@ import soundfile as sf
 import numpy as np
 import math
 
-from mymodule import rec_config as rec_conf
-from . import utility
+from core import rec_config as rec_conf
+from . import utils
 
 def get_wave_sample(wave_path):
     """wave_pathの中で最も長い音声長を返す
@@ -37,7 +37,7 @@ def save_wave(signal, file_name, sample_rate=rec_conf.sampling_rate):
     :param sample_rate: サンプリングレート
     """
     """ 出力先のディレクトリの確認 """
-    utility.exists_dir(utility.get_dir_name(file_name))
+    utils.exists_dir(utils.get_dir_name(file_name))
     """ データを書き込み """
     sf.write(file_name, signal, sample_rate, subtype='PCM_16')
 

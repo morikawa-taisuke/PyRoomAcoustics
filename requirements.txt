@@ -1,7 +1,0 @@
-soundfile
-tqdm
-pandas
-scipy
-matplotlib
-PyYAML
-pyroomacoustics

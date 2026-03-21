@@ -9,7 +9,7 @@ from pathlib import Path
 
 # rec2.py から必要な関数をインポート
 from rec2 import recoding2
-from mymodule import const, my_func
+from core import const, my_func
 import pyroomacoustics as pa
 
 

@@ -54,7 +54,7 @@ def find_parameters_for_rt60(target_rt60: float,
 ):
 	"""
 	目標のRT60（実測値）に一致する吸収率と反射回数を探索する
-	(rec_utility.py の search_reverb_sec のロジックを改良)
+	(rec_utils.py の search_reverb_sec のロジックを改良)
 	"""
 
 	current_target_rt60 = target_rt60

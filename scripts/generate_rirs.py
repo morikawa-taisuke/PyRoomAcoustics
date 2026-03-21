@@ -8,7 +8,7 @@ import pyroomacoustics as pa
 import soundfile as sf
 from tqdm import tqdm
 
-from mymodule import const
+from core import const
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 

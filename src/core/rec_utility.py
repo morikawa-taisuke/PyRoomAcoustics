@@ -1,4 +1,4 @@
-# src/mymodule/rec_utility.py
+# src/mymodule/rec_utils.py
 import json
 import random
 from pathlib import Path
@@ -323,13 +323,13 @@ def compute_rirs(room: pa.ShoeBox, mic_coords: np.ndarray,
 
 
 def get_wave_power(wave_data):
-	"""音源のパワーを計算する (旧: rec_utility.py)"""
+	"""音源のパワーを計算する (旧: rec_utils.py)"""
 	# チャンネル全体で平均パワーを計算
 	return np.mean(wave_data ** 2)
 
 
 def get_scale_noise(signal_data, noise_data, snr_db):
-	"""指定したSNRに雑音の大きさを調整 (旧: rec_utility.py)"""
+	"""指定したSNRに雑音の大きさを調整 (旧: rec_utils.py)"""
 	signal_power = get_wave_power(signal_data)
 	noise_power = get_wave_power(noise_data)
 
