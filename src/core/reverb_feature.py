@@ -1,5 +1,9 @@
+"""
+【役割】
+C50やD50などのインパルス応答(RIR)から残響指標を計算するモジュール
+"""
 import numpy as np
-from mymodule import rec_config as rec_conf
+from core import dsp_params as rec_conf
 
 
 # C50とD50の計算例

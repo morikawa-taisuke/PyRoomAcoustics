@@ -1,6 +1,0 @@
-soundfile
-tqdm
-pandas
-scipy
-matplotlib
-pyroomacoustics

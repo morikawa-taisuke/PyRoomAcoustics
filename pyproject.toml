@@ -1,13 +1,18 @@
 [project]
-name = "pyroomacoustics"
+name = "room_acoustics_dataset"
 version = "0.1.0"
-description = "Add your description here"
+description = "Dataset generator using pyroomacoustics"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "pyroomacoustics>=0.7.3",
+    "resampy",
     "matplotlib>=3.10.8",
+    "numpy>=2.4.2",
     "pandas>=3.0.1",
+    "pyyaml>=6.0.3",
     "scipy>=1.17.0",
     "soundfile>=0.13.1",
     "tqdm>=4.67.3",
+    "python-dotenv>=1.2.2",
 ]

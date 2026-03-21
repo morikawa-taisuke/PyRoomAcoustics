@@ -1,0 +1,51 @@
+# dataset_config.yaml
+# 音源強調用データセット作成のための設定ファイル
+
+paths:
+  # 処理対象のデータスプリット (例: train, val, test)
+  splits:
+    - train
+    - val
+    - test
+  
+  # 音声・雑音データのルートディレクトリ (音源データのルートディレクトリからの相対パス)
+  speech_dir: "JA"
+  noise_dir: "DEMAND_16kHz"
+  
+  # 生成されたデータセットの保存先ディレクトリ
+  output_dir: "JA_DEMAND"
+
+room_params:
+  # 部屋の寸法 (x, y, z) [m]
+  # 現在は音割れ防止のため固定値を推奨
+  dimensions: [5.0, 5.0, 5.0]
+  
+  # マイクロフォンの位置 (x, y, z) [m]
+  # 部屋の中心からの相対位置ではなく絶対座標で指定 (中心は 2.5, 2.5, 2.5)
+  mic_position: [2.5, 2.5, 2.5]
+  
+  # 音源(話者)の位置 (x, y, z) [m]
+  speech_position: [1.5, 2.5, 1.5]
+  
+  # 雑音源の位置 (x, y, z) [m]
+  noise_position: [3.5, 2.5, 3.5]
+
+acoustic_params:
+  # SNR (Signal-to-Noise Ratio) [dB]
+  # 固定値にしたい場合は min と max を同じ値にする (例: min: 5.0, max: 5.0)
+  snr:
+    min: 0.0
+    max: 10.0
+    
+  # 残響時間 (Rt60) [s]
+  # 固定値にしたい場合は min と max を同じ値にする (例: min: 0.3, max: 0.3)
+  rt60:
+    min: 0.2
+    max: 0.5
+    
+system:
+  # サンプリング周波数 [Hz] (基本は16000固定)
+  sample_rate: 16000
+  
+  # マルチプロセス実行時の並列ワーカー数 (CPUコア数に合わせて調整)
+  num_workers: 6
